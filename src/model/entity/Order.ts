@@ -18,16 +18,15 @@ export enum OrderState {
   DONE = 0xFF,
 }
 
-@Entity("order", { schema: "cowball_mrdaebak" })
+@Entity("order")
 export class Order {
   @PrimaryGeneratedColumn('increment')
-  @Column("int", { primary: true, name: "order_id" })
   orderId: number;
 
   @Column()
   userId: string;
 
-  @Column("timestamp", { name: "order_date", nullable: true })
+  @Column("timestamp", { nullable: true })
   orderDate: Date | null;
 
   @Column("timestamp", { name: "rsv_date", nullable: true })

@@ -1,13 +1,13 @@
-import { Column, Entity } from "typeorm";
+import { Column, Entity, PrimaryColumn } from "typeorm";
 
-@Entity("steak_doneness_degree", { schema: "cowball_mrdaebak" })
+@Entity("steak_doneness_degree")
 export class SteakDonenessDegree {
-  @Column("int", { primary: true, name: "degree_id" })
+  @PrimaryColumn("int")
   degreeId: number;
 
-  @Column("varchar", { name: "degree_en", nullable: true, length: 255 })
-  degreeEn: string | null;
+  @Column("varchar", { length: 255 })
+  degreeEn: string;
 
-  @Column("varchar", { name: "degree_ko", nullable: true, length: 255 })
-  degreeKo: string | null;
+  @Column("varchar", { length: 255 })
+  degreeKo: string;
 }

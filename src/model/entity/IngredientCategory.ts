@@ -1,13 +1,13 @@
-import { Column, Entity, OneToMany } from "typeorm";
+import { Column, Entity, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Ingredient } from "./Ingredient";
 
-@Entity("ingredient_category", { schema: "cowball_mrdaebak" })
+@Entity("ingredient_category")
 export class IngredientCategory {
-  @Column("int", { primary: true, name: "category_id" })
+  @PrimaryGeneratedColumn('increment')
   categoryId: number;
 
-  @Column("varchar", { name: "category_name", nullable: true, length: 25 })
-  categoryName: string | null;
+  @Column("varchar", { length: 25 })
+  categoryName: string;
 
   @OneToMany(() => Ingredient, (ingredient) => ingredient.category)
   ingredients: Ingredient[];

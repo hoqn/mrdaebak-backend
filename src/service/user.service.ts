@@ -68,4 +68,11 @@ export class UserService {
 
         await this.userRepo.save(user);
     }
+
+    async deleteUser(userId: string) {
+        return this.userRepo.createQueryBuilder()
+            .delete()
+            .where({ userId })
+            .execute();
+    }
 }

@@ -1,9 +1,9 @@
-import { StaffRole } from "@/model/entity";
+import { StaffRole } from "@/model/enum";
 
 export enum SecurityRole {
-    USER = 0x00,
-    STAFF_DELIVERY = 0x11,
-    STAFF_COOK = 0x12,
+    USER = 0x01,
+    STAFF_COOK = 0x11,
+    STAFF_DELIVERY = 0x12,
     OWNER = 0x20,
 }
 

@@ -5,32 +5,28 @@ import {
   JoinColumn,
   JoinTable,
   ManyToMany,
-  ManyToOne
+  ManyToOne,
+  PrimaryGeneratedColumn
 } from "typeorm";
 import { Dinner } from "./Dinner";
 import { OrderDinner } from "./OrderDinner";
 
-@Index("FK_Dinner_TO_Dinner_option_1", ["dinnerId"], {})
-@Entity("dinner_option", { schema: "cowball_mrdaebak" })
+@Entity("dinner_option")
 export class DinnerOption {
-  @Column("int", { primary: true, name: "dinner_option_id" })
+  @PrimaryGeneratedColumn("increment")
   dinnerOptionId: number;
 
-  @Column("int", { primary: true, name: "dinner_id" })
+  @Column("int")
   dinnerId: number;
 
-  @Column("varchar", { name: "dinner_option_name", nullable: true, length: 50 })
-  dinnerOptionName: string | null;
+  @Column("varchar", { length: 50 })
+  dinnerOptionName: string;
 
-  @Column("varchar", {
-    name: "dinner_option_detail",
-    nullable: true,
-    length: 255,
-  })
-  dinnerOptionDetail: string | null;
+  @Column("varchar", { length: 255 })
+  dinnerOptionDetail: string;
 
-  @Column("int", { name: "dinner_option_price", nullable: true })
-  dinnerOptionPrice: number | null;
+  @Column("int")
+  dinnerOptionPrice: number;
 
   @ManyToOne(() => Dinner, (dinner) => dinner.dinnerOptions)
   @JoinColumn([{ name: "dinner_id", referencedColumnName: "dinnerId" }])

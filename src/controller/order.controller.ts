@@ -1,9 +1,9 @@
 import { OrderState } from "@/model/entity";
+import { ListParams } from "@/model/list.params";
+import { OrderDirection, OrderParams } from "@/model/order.params";
 import { OrderService } from "@/service/order.service";
-import { PaginationOptions } from "@/service/utils/paginatedResult";
 import { ResBody } from "@/types/responseBody";
-import { Body, Controller, Delete, ForbiddenException, Get, Param, Post, Put, Query, Res } from "@nestjs/common";
-import { Response } from "express";
+import { Body, Controller, Delete, ForbiddenException, Get, Param, Put, Query } from "@nestjs/common";
 
 @Controller('orders')
 export class OrderController {
@@ -13,27 +13,19 @@ export class OrderController {
 
     @Get()
     async getOrders(
-        @Query('page') page?: number,
         @Query('user_id') userId?: string,
         @Query('state') orderState?: keyof typeof OrderState,
-        @Query('sort_by') sortBy?: 'order_date' | 'rsv_date',
-        @Query('sort_to') sortTo?: 'asc' | 'desc',
+        @Query('page') page?: number,
+        @Query('order_by') orderBy?: string,
+        @Query('order_direction') orderDirection?: OrderDirection,
     ) {
-        // 이후 확장성을 위해 값을 복사해서 사용하자..!
-        const sortByValue = sortBy;
-        const sortToValue = sortTo;
-
         const mOrderState = orderState ? OrderState[orderState.toUpperCase()] : undefined;
         if (mOrderState === OrderState.CART) throw new ForbiddenException();
 
-        const items = await this.orderService.getOrders(
-            { userId, orderState: mOrderState },
-            PaginationOptions.from(page ? page : 1),
-            { sortBy: sortByValue, sortTo: sortToValue });
-
-        return <ResBody>{
-            result: items,
-        }
+        return await this.orderService.getOrdersBy({ 
+                userId,
+                orderState: mOrderState
+            }, new ListParams(page), new OrderParams(orderBy, orderDirection));
     }
 
     @Get(':orderId/i/:orderDinnerId')

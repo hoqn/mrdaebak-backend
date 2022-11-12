@@ -1,4 +1,7 @@
 import { Dinner, DinnerOption, Style, StyleOption } from "@/model/entity";
+import { ListParams } from "@/model/list.params";
+import { ListResult, ListResultPromise } from "@/model/list.result";
+import { OrderParams } from "@/model/order.params";
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -12,8 +15,19 @@ export class MenuService {
         @InjectRepository(DinnerOption) private readonly dinnerOptionRepo: Repository<DinnerOption>,
     ) {}
 
-    async getAllDinners(): Promise<Dinner[]> {
-        return await this.dinnerRepo.find();
+    async getAllDinners(
+        listParams: ListParams, orderParams?: OrderParams
+    ): ListResultPromise<Dinner> {
+        const qb = this.dinnerRepo.createQueryBuilder()
+            .select();
+        
+        if(orderParams) orderParams.adaptTo(qb);
+
+        listParams.adaptTo(qb);
+
+        const [items, count] = await qb.getManyAndCount();
+
+        return new ListResult(listParams, count, items);
     }
 
     async getDinnerById(dinnerId: number) {

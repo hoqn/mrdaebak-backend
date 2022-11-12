@@ -1,27 +1,28 @@
-import { Column, Entity, ManyToMany, OneToMany } from "typeorm";
+import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Dinner } from "./Dinner";
-import { StyleIngredient } from "./StyleIngredient";
+import { Ingredient } from "./Ingredient";
 import { StyleOption } from "./StyleOption";
 
-@Entity("style", { schema: "cowball_mrdaebak" })
+@Entity("style")
 export class Style {
-  @Column("int", { primary: true, name: "style_id" })
+  @PrimaryGeneratedColumn("increment")
   styleId: number;
 
-  @Column("varchar", { name: "style_name", nullable: true, length: 50 })
-  styleName: string | null;
+  @Column("varchar", { length: 50 })
+  styleName: string;
 
-  @Column("int", { name: "style_price", nullable: true })
-  stylePrice: number | null;
+  @Column("int")
+  stylePrice: number;
 
-  @Column("varchar", { name: "style_detail", nullable: true, length: 255 })
-  styleDetail: string | null;
+  @Column("varchar", { length: 255 })
+  styleDetail: string;
 
   @ManyToMany(() => Dinner, (dinner) => dinner.styles)
   dinners: Dinner[];
 
-  @OneToMany(() => StyleIngredient, (styleIngredient) => styleIngredient.style)
-  styleIngredients: StyleIngredient[];
+  @ManyToMany(() => Ingredient)
+  @JoinTable({ name: "style_ingredient" })
+  ingredients: Ingredient[];
 
   @OneToMany(() => StyleOption, (styleOption) => styleOption.style)
   styleOptions: StyleOption[];

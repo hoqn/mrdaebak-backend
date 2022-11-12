@@ -3,7 +3,7 @@ import { CreateUserDto, PatchUserDto } from "@/model/dto/user.dto";
 import { UserService } from "@/service/user.service";
 import { ResBody } from "@/types/responseBody";
 import { ClientTypeQuery, UserGradeQuery } from "@/types/QueryParams";
-import { Body, Controller, Get, HttpStatus, Param, Patch, Post, Query, Res, SetMetadata, UseGuards, Version } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpStatus, NotFoundException, Param, Patch, Post, Query, Res, SetMetadata, UseGuards, Version } from "@nestjs/common";
 import { Response } from "express";
 import { ExclusiveOrRoleGuard, BaseAuthGuard, RoleGuard } from "@/security/guard";
 import { SecurityRoles } from "@/security/role.decorator";
@@ -112,11 +112,27 @@ export class UserController {
     async patchUser(
         @Param('userid') userId: string,
         @Body() dto: PatchUserDto,
-        @Res() res: Response,
     ) {
         await this.userService.updateUser(userId, dto);
-        res.json(<ResBody>{
+        return <ResBody>{
             message: '성공하였습니다',
-        });
+        };
+    }
+
+    @Delete(':userId')
+    @UseGuards(BaseAuthGuard, ExclusiveOrRoleGuard)
+    @SecurityRoles()
+    @SetMetadata('param', 'userId')
+    async deleteUser(
+        @Param('userId') userId: string,
+    ) {
+        const result = await this.userService.deleteUser(userId);
+
+        if(result.affected < 1) throw new NotFoundException();
+
+        return <ResBody> {
+            code: 0,
+            message: '성공하였습니다.',
+        };
     }
 }

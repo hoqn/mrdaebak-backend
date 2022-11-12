@@ -1,4 +1,6 @@
 import { Style } from "@/model/entity";
+import { ListParams } from "@/model/list.params";
+import { OrderDirection, OrderParams } from "@/model/order.params";
 import { ResBody } from "@/types/responseBody";
 import { Controller, Get, HttpStatus, Param, Query, Res } from "@nestjs/common";
 import { Response } from "express";
@@ -10,17 +12,14 @@ export class MenuController {
     
     @Get('dinners')
     async getDinners(
-        @Res() res: Response,
+        @Query('page') page?: number,
+        @Query('order_by') orderBy?: string,
+        @Query('order_direction') orderDirection?: OrderDirection
     ) {
-        const contents = await this.menuService.getAllDinners();
-        res.json(<ResBody>{
-            result: {
-                count: contents.length,
-                page: 1,
-                items: contents,
-            }
-        });
-        return;
+        return await this.menuService.getAllDinners(
+            new ListParams(page),
+            new OrderParams(orderBy, orderDirection),
+        );
     }
 
     @Get('dinners/:dinnerId')

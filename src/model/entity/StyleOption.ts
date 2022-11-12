@@ -1,29 +1,18 @@
-import { Column, Entity, Index, JoinColumn, ManyToOne } from "typeorm";
+import { Column, Entity, Index, JoinColumn, ManyToOne, PrimaryGeneratedColumn } from "typeorm";
 import { Style } from "./Style";
 
-@Index("FK_Style_TO_Style_option_1", ["styleId"], {})
-@Entity("style_option", { schema: "cowball_mrdaebak" })
+@Entity("style_option")
 export class StyleOption {
-  @Column("int", { primary: true, name: "style_option_id" })
+  @PrimaryGeneratedColumn("increment")
   styleOptionId: number;
 
-  @Column("int", { primary: true, name: "style_id" })
-  styleId: number;
+  @Column("varchar", { length: 255 })
+  styleOptionDetail: string;
 
-  @Column("varchar", {
-    name: "style_option_detail",
-    nullable: true,
-    length: 255,
-  })
-  styleOptionDetail: string | null;
+  @Column("int")
+  styleOptionPrice: number;
 
-  @Column("int", { name: "style_option_price", nullable: true })
-  styleOptionPrice: number | null;
-
-  @ManyToOne(() => Style, (style) => style.styleOptions, {
-    onDelete: "RESTRICT",
-    onUpdate: "RESTRICT",
-  })
+  @ManyToOne(() => Style, (style) => style.styleOptions)
   @JoinColumn([{ name: "style_id", referencedColumnName: "styleId" }])
   style: Style;
 }

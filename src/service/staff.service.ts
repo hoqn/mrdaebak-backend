@@ -1,9 +1,12 @@
 import { IdDuplicatedException } from "@/exception/IdDuplicatedException";
-import { CreateStaffDto } from "@/model/dto/staff.dto";
-import { Staff, StaffRole } from "@/model/entity";
-import { HttpException, HttpStatus } from "@nestjs/common";
+import { CreateStaffReq } from "@/model/dto/staff.dto";
+import { Staff } from "@/model/entity";
+import { StaffRole } from "@/model/enum";
+import { ListParams } from "@/model/list.params";
+import { ListResult, ListResultPromise } from "@/model/list.result";
+import { OrderParams } from "@/model/order.params";
 import { InjectRepository } from "@nestjs/typeorm";
-import { ILike, Repository } from "typeorm";
+import { DeleteResult, ILike, Not, Repository, UpdateResult } from "typeorm";
 import PasswordEncryptor from "./utils/passwordEncryptor";
 
 export class StaffService {
@@ -11,59 +14,67 @@ export class StaffService {
         @InjectRepository(Staff) private readonly staffRepo: Repository<Staff>
     ) { }
 
-    async createMember(dto: CreateStaffDto) {
-        // ID 중복 체크
+    async createPendingMember(dto: CreateStaffReq) {
         const existing = await this.staffRepo.findOneBy({ staffId: dto.staffId });
-        if (existing) throw new IdDuplicatedException();
+        if(existing) throw new IdDuplicatedException();
 
         const member = dto.toEntity();
-
         member.password = PasswordEncryptor.encrypt(dto.password);
-
-        member.joinDate = new Date();
         member.role = StaffRole.PENDING;
-
+        
         await this.staffRepo.save(member);
 
         member.password = undefined;
+
         return member;
     }
 
-    async getMembers() {
-        return await this.staffRepo.find();
+    async getMembers(listParams: ListParams, orderParams?: OrderParams): ListResultPromise<Staff> {
+        return this.getMembersBy({}, listParams, orderParams);
     }
 
-    async getMembersBy({ staffName, role }: { staffName?: string, role?: StaffRole }) {
-        return await this.staffRepo.findBy({
-            staffName: staffName ? ILike(`%${staffName}%`) : undefined,
-            role,
-        });
+    async getMembersBy(query: { staffName?: string, role?: StaffRole },
+        listParams: ListParams, orderParams?: OrderParams
+    ): ListResultPromise<Staff> {
+        const qb = this.staffRepo.createQueryBuilder()
+            .select();
+
+        if (query.staffName) qb.andWhere({ staffName: ILike(`%${query.staffName}%`) });
+        if (query.role !== undefined) qb.andWhere({ role: query.role });
+
+        if (orderParams) orderParams.adaptTo(qb);
+
+        listParams.adaptTo(qb);
+
+        const [items, count] = await qb.getManyAndCount();
+
+        return new ListResult(listParams, count, items.map(i => { i.password = undefined; return i;}));
     }
 
-    async getMemberByStaffId(staffId: string): Promise<Staff> {
-        return await this.staffRepo.findOneBy({
-            staffId: staffId
-        });
+    async getMember(staffId: string): Promise<Staff> {
+        return await this.staffRepo.findOneBy({ staffId });
     }
 
-    async updateMember(staffId: string, body: Partial<Staff>): Promise<boolean> {
-        const member = await this.staffRepo.findOneBy({ staffId: staffId });
+    async updateMember(staffId: string, body: Partial<Staff>): Promise<UpdateResult> {
+        const qb = this.staffRepo.createQueryBuilder()
+            .update()
+            .where({ staffId });
 
-        console.log('mem: ', member);
+        const updateBody: any = {};
 
-        if(!member) return false;
+        if (body.staffName) updateBody.staffName = body.staffName;
+        if (body.phoneNumber) updateBody.phoneNumber = body.phoneNumber;
+        if (body.role) updateBody.role = body.role;
+        if (body.password) updateBody.password = PasswordEncryptor.encrypt(body.password);
 
-        if(body.staffName) member.staffName = body.staffName;
-        if(body.phoneNumber) member.phoneNumber = body.phoneNumber;
-        if(body.role) member.role = body.role;
+        return await qb.set(updateBody)
+            .execute();
+    }
 
-        if(body.password)
-            member.password = PasswordEncryptor.encrypt(body.password);
-
-        console.log('MEMBER: ', member);
-
-        this.staffRepo.save(member);
-
-        return true;
+    async deleteMember(staffId: string): Promise<DeleteResult> {
+        return await this.staffRepo.createQueryBuilder()
+            .delete()
+            .where({ staffId })
+            .execute();
     }
 }

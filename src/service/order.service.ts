@@ -1,11 +1,13 @@
 import { AddOrderDinnerDto, UpdateOrderMetaDto } from "@/model/dto/order.dto";
 import { DinnerOption, Order, OrderDinner, OrderState } from "@/model/entity";
+import { ListParams } from "@/model/list.params";
+import { ListResult, ListResultPromise } from "@/model/list.result";
+import { OrderParams } from "@/model/order.params";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectDataSource, InjectRepository } from "@nestjs/typeorm";
 import { isPhoneNumber, isString } from "class-validator";
 import { DataSource, DeleteResult, FindOptionsOrder, Not, Repository, UpdateResult } from "typeorm";
 import { MenuService } from "./menu.service";
-import { PaginationOptions, PaginationResult } from "./utils/paginatedResult";
 
 @Injectable()
 export class OrderService {
@@ -17,22 +19,21 @@ export class OrderService {
         @InjectDataSource() private readonly dataSource: DataSource,
     ) { }
 
-    public async getOrders(
-        params: {
-            userId?: string, orderState?: OrderState,
-        },
-        paginationOptions: PaginationOptions,
-        sorting?: OrderService.SortingOptions,
-    ): Promise<PaginationResult<Order>> {
-        const querySortOptions = sorting ? OrderService.makeFindOptionsOrder(sorting) : undefined;
-        const [items, count] = await this.orderRepo.findAndCount({
-            where: { userId: params.userId, orderState: params.orderState },
-            order: querySortOptions,
-            take: paginationOptions.take,
-            skip: paginationOptions.take * (paginationOptions.page - 1),
-        });
+    public async getOrdersBy(query: { userId?: string, orderState?: OrderState },
+        listParams: ListParams, orderParams?: OrderParams
+    ): ListResultPromise<Order> {
+        const qb = this.orderRepo.createQueryBuilder()
+            .select();
 
-        return PaginationResult.from(paginationOptions, count, items);
+        if (query.userId) qb.andWhere({ userId: query.userId });
+        if (query.orderState) qb.andWhere({ orderState: query.orderState });
+
+        if (orderParams) orderParams.adaptTo(qb);
+        listParams.adaptTo(qb);
+
+        const [items, count] = await qb.getManyAndCount();
+
+        return new ListResult(listParams, count, items);
     }
 
     public async getOrCreateCart(userId: string, withItems?: boolean): Promise<[number, Order]> {
@@ -55,7 +56,7 @@ export class OrderService {
             },
         });
 
-        if(order.orderDinners) {
+        if (order.orderDinners) {
             return this.applyPriceOrder(order);
         } else {
             return order;
@@ -154,23 +155,23 @@ export class OrderService {
             })
             .where({ userId, orderState: OrderState.CART })
             .execute();*/
-        const [,order] = await this.getOrCreateCart(userId, true);
+        const [, order] = await this.getOrCreateCart(userId, true);
 
         /* 주문 가능한지 검사 */
-        if(!order) throw new NotFoundException();
-        if(!this.isOrderable(order)) throw new BadRequestException();
+        if (!order) throw new NotFoundException();
+        if (!this.isOrderable(order)) throw new BadRequestException();
         order.orderState = OrderState.WAITING;
         order.orderDate = new Date();
 
         await this.applyPriceOrder(order)
-        
+
         /* TODO: 실시간 알림 기능 추가 */
 
         return await this.orderRepo.save(order);
     }
 
     private isOrderable(order: Order): boolean {
-        if(
+        if (
             order.orderId &&
             order.userId &&
             order.rsvDate && order.rsvDate.getTime() > (new Date()).getTime() &&
@@ -233,13 +234,13 @@ export class OrderService {
                 orderDinnerId: orderDinnerId,
             })
             .execute();
-        
+
         const options = dto.dinnerOptionIds.map(id => <object>{
-            order_id: orderId, 
-            order_dinner_id: orderDinnerId, 
-            dinner_option_id: id 
+            order_id: orderId,
+            order_dinner_id: orderDinnerId,
+            dinner_option_id: id
         });
-        
+
         await this.dataSource
             .createQueryBuilder()
             .insert()

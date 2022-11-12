@@ -27,7 +27,7 @@ export class AuthService {
                     id: u.userId
                 }: null);
         } else if(payload.type === 'staff') {
-            return await this.staffService.getMemberByStaffId(payload.id)
+            return await this.staffService.getMember(payload.id)
                 .then(u => {
                     if(u) {
                         //const role = SecurityRole.OWNER;
@@ -57,7 +57,7 @@ export class AuthService {
         let e: Error = undefined;
         
         const requiredPassword = type === 'staff'
-            ? await this.staffService.getMemberByStaffId(id).then(member => {
+            ? await this.staffService.getMember(id).then(member => {
                 if(member) return member.password
                 else e = new NoIdException();
             })

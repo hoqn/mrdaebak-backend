@@ -1,27 +1,25 @@
 import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
-import { DinnerIngredient } from "./DinnerIngredient";
 import { DinnerOption } from "./DinnerOption";
+import { Ingredient } from "./Ingredient";
 import { Style } from "./Style";
 
-@Entity("dinner", { schema: "cowball_mrdaebak" })
+@Entity("dinner")
 export class Dinner {
-  @PrimaryGeneratedColumn('increment') @Column("int", { primary: true, name: "dinner_id" })
+  @PrimaryGeneratedColumn('increment')
   dinnerId: number;
 
-  @Column("varchar", { name: "dinner_name", nullable: true, length: 50 })
-  dinnerName: string | null;
+  @Column("varchar", { length: 50 })
+  dinnerName: string;
 
-  @Column("int", { name: "dinner_price", nullable: true })
-  dinnerPrice: number | null;
+  @Column("int")
+  dinnerPrice: number;
 
-  @Column("varchar", { name: "dinner_detail", nullable: true, length: 255 })
-  dinnerDetail: string | null;
+  @Column("varchar", { length: 255 })
+  dinnerDetail: string;
 
-  @OneToMany(
-    () => DinnerIngredient,
-    (dinnerIngredient) => dinnerIngredient.dinner
-  )
-  dinnerIngredients: DinnerIngredient[];
+  @ManyToMany(() => Ingredient)
+  @JoinTable({ name: "dinner_ingredient" })
+  ingredients: Ingredient[];
 
   @OneToMany(() => DinnerOption, (dinnerOption) => dinnerOption.dinner)
   dinnerOptions: DinnerOption[];
@@ -31,7 +29,6 @@ export class Dinner {
     name: "dinner_style",
     joinColumns: [{ name: "dinner_id", referencedColumnName: "dinnerId" }],
     inverseJoinColumns: [{ name: "style_id", referencedColumnName: "styleId" }],
-    schema: "cowball_mrdaebak",
   })
   styles: Style[];
 }

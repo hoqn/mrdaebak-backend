@@ -1,7 +1,8 @@
-import { IsArray, IsEnum, IsOptional, IsPhoneNumber, IsString } from "class-validator";
-import { Staff, StaffRole } from "../entity";
+import { IsEnum, IsOptional, IsPhoneNumber, IsString } from "class-validator";
+import { Staff } from "../entity";
+import { StaffRole } from "../enum";
 
-export class CreateStaffDto {
+export class CreateStaffReq {
     @IsString()
     readonly staffId: string;
 
@@ -12,9 +13,9 @@ export class CreateStaffDto {
     readonly staffName: string;
 
     @IsString() @IsOptional() @IsPhoneNumber('KR')
-    readonly phoneNumber: string|null;
+    readonly phoneNumber: string | null;
 
-    toEntity(): Staff {
+    public toEntity(): Staff {
         const entity = new Staff();
 
         entity.staffId = this.staffId;
@@ -26,10 +27,20 @@ export class CreateStaffDto {
     }
 }
 
-export class ApproveStaffDto {
-    @IsEnum(['OWNER', 'COOK', 'DELIVERY'])
-    readonly role: 'OWNER'|'COOK'|'DELIVERY';
+export class UpdateStaffReq {
+    @IsString() @IsOptional()
+    readonly password?: string;
 
-    @IsString()
-    readonly staffId: string;
+    @IsString() @IsOptional()
+    readonly staffName?: string;
+
+    @IsString() @IsOptional() @IsPhoneNumber('KR', {always: false})
+    readonly phoneNumber?: string | null;
+
+    @IsEnum(StaffRole) @IsOptional()
+    readonly role?: keyof typeof StaffRole;
+
+    public toStaffRole(): StaffRole {
+        return StaffRole[this.role];
+    }
 }

@@ -1,9 +1,12 @@
 import { IdDuplicatedException } from "@/exception";
-import { ApproveStaffDto, CreateStaffDto } from "@/model/dto/staff.dto";
-import { Staff, StaffRole } from "@/model/entity";
+import { CreateStaffReq, UpdateStaffReq } from "@/model/dto/staff.dto";
+import { Staff } from "@/model/entity";
+import { StaffRole } from "@/model/enum";
+import { ListParams } from "@/model/list.params";
+import { OrderDirection, OrderParams } from "@/model/order.params";
 import { StaffService } from "@/service/staff.service";
 import { ResBody } from "@/types/responseBody";
-import { Body, Controller, Get, HttpException, HttpStatus, Patch, Post, Query, Res, Version } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, ForbiddenException, Get, HttpException, HttpStatus, InternalServerErrorException, NotAcceptableException, NotFoundException, Param, Patch, Post, Query, Res, Version } from "@nestjs/common";
 import { Response } from "express";
 
 @Controller('staff')
@@ -12,101 +15,62 @@ export class StaffController {
         private readonly staffService: StaffService
     ) { }
 
-    // 회원 가입(직원)
-    // POST api/v1/staff
-    @Version('1') @Post()
-    async createMember(
-        @Res() res: Response,
-        @Body() body: CreateStaffDto,
-    ) {
-        try {
-            await this.staffService.createMember(body);
-        } catch (e) {
-            if (e instanceof IdDuplicatedException) {
-                res.status(HttpStatus.FORBIDDEN).json(<ResBody>{
-                    code: 3,
-                    message: "아이디가 중복되었습니다.",
-                });
-            }
-            return;
-        }
-
-        res.json(<ResBody>{
-            message: "성공했습니다.",
-        })
+    @Post()
+    async createMember(@Body() body: CreateStaffReq) {
+        return await this.staffService.createPendingMember(body)
+            .catch(e => {
+                if(e instanceof IdDuplicatedException) 
+                    throw new NotAcceptableException(undefined, 'ID가 중복됩니다.')
+                else
+                    throw new InternalServerErrorException(e);
+            });
     }
-
-    // 직원 목록 조회
-    // GET /api/v1/staff?staff_name={}&role={}
-    @Version('1') @Get()
+    
+    @Get()
     async getMembers(
-        @Res() res: Response,
         @Query('staff_name') staffName?: string,
         @Query('role') role?: 'PENDING' | 'OWNER' | 'DELIVERY' | 'COOK',
+        @Query('page') page?: number,
+        @Query('order_by') orderBy?: string,
+        @Query('order_direction') orderDirection?: OrderDirection,
     ) {
-        const staffRole =
-            role === 'PENDING'
-                ? StaffRole.PENDING
-                : role === 'OWNER'
-                    ? StaffRole.OWNER
-                    : role === 'DELIVERY'
-                        ? StaffRole.DELIVERY
-                        : role === 'COOK'
-                            ? StaffRole.COOK
-                            : undefined;
+        const staffRole = StaffRole[role];
 
-        const members: Staff[] = await this.staffService.getMembersBy({
-            staffName,
-            role: staffRole,
-        });
-
-        res.json(<ResBody>{
-            result: {
-                count: members.length,
-                items: members.map(member => {
-                    member.password = undefined;
-                    return member;
-                }),
-            },
-        });
-        return;
+        return await this.staffService.getMembersBy({
+            staffName, role: staffRole,
+        }, new ListParams(page), new OrderParams(orderBy, orderDirection)); 
     }
 
-    // 직원 승인
-    // PATCH api/v1/staff
-    @Version('1') @Patch()
-    async approveMembers(
-        @Res() res: Response,
-        @Body() body: ApproveStaffDto,
+    @Get(':staffId')
+    async getMember(@Param('staffId') staffId: string) {
+        const member: Staff = await this.staffService.getMember(staffId);
+        if(!member) throw new NotFoundException();
+        
+        member.password = undefined;
+
+        return member;
+    }
+
+    @Delete(':staffId')
+    async deleteMember(@Param('staffId') staffId: string) {
+        return await this.staffService.deleteMember(staffId);
+    }
+
+    @Patch(':staffId')
+    async patchMember(
+        @Param('staffId') staffId: string,
+        @Body() body: UpdateStaffReq,
     ) {
-        const role =
-            body.role === 'OWNER'
-                ? StaffRole.OWNER
-                : body.role === 'DELIVERY'
-                    ? StaffRole.DELIVERY
-                    : body.role === 'COOK'
-                        ? StaffRole.COOK
-                        : undefined;
+        const role = body.toStaffRole();
+        if (!role) throw new BadRequestException('필수 인자 role이 누락되었습니다.');
 
-        if (!role) throw new HttpException('필수 인자 role이 누락되었습니다.', HttpStatus.BAD_REQUEST);
-
-        let count = 0;
-
-        const result = await this.staffService.updateMember(body.staffId, <Staff>{
-            role: role,
+        const result = await this.staffService.updateMember(staffId, {
+            ...body,
+            role,
         });
 
-        if(!result) {
-            res.status(HttpStatus.NOT_FOUND).json(<ResBody>{
-                code: 1,
-                message: '수정할 수 없습니다.'
-            });
-            return;
-        }
+        if(!result) throw new NotFoundException();
 
-        res.json(<ResBody>{
-            message: `요청이 처리되었습니다.`,
-        });
-        return;
+        return result;
     }
 }

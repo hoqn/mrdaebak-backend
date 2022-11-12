@@ -10,24 +10,24 @@ import {
 import { DinnerOption } from "./DinnerOption";
 import { Order } from "./Order";
 
-@Entity("order_dinner", { schema: "cowball_mrdaebak" })
+@Entity("order_dinner")
 export class OrderDinner {
-  @PrimaryGeneratedColumn('increment') @Column("int", { primary: true, name: "order_dinner_id" })
+  @PrimaryGeneratedColumn("increment")
   orderDinnerId: number;
 
-  @Column("int", { primary: true, name: "order_id" })
+  @Column("int")
   orderId: number;
 
-  @Column("int", { name: "total_dinner_price", nullable: true })
+  @Column("int", { nullable: true })
   totalDinnerPrice: number | null;
 
-  @Column("int", { name: "degree_id", nullable: true })
+  @Column("int", { nullable: true })
   degreeId: number | null;
 
-  @Column("int", { name: "dinner_id" })
+  @Column("int")
   dinnerId: number;
 
-  @Column("int", { name: "style_id" })
+  @Column("int")
   styleId: number;
 
   @ManyToOne(() => Order, (order) => order.orderDinners)
@@ -39,7 +39,6 @@ export class OrderDinner {
     name: 'order_dinner_option',
     joinColumns: [
       { name: 'order_dinner_id', referencedColumnName: 'orderDinnerId' },
-      { name: 'order_id', referencedColumnName: 'orderId' },
     ],
     inverseJoinColumns: [
       { name: 'dinner_option_id', referencedColumnName: 'dinnerOptionId' },
