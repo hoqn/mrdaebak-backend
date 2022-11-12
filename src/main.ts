@@ -12,7 +12,10 @@ async function bootstrap() {
     prefix: 'api/v',
     defaultVersion: '1',
   });
-  apiApp.enableCors();
+  apiApp.enableCors({
+    origin: true,
+    credentials: true,
+  });
   apiApp.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
