@@ -1,11 +1,11 @@
-import { Column, Entity, JoinTable, ManyToMany, OneToMany } from "typeorm";
+import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { DinnerIngredient } from "./DinnerIngredient";
 import { DinnerOption } from "./DinnerOption";
 import { Style } from "./Style";
 
 @Entity("dinner", { schema: "cowball_mrdaebak" })
 export class Dinner {
-  @Column("int", { primary: true, name: "dinner_id" })
+  @PrimaryGeneratedColumn('increment') @Column("int", { primary: true, name: "dinner_id" })
   dinnerId: number;
 
   @Column("varchar", { name: "dinner_name", nullable: true, length: 50 })

@@ -4,12 +4,7 @@ import { join } from "path";
 import { SnakeNamingStrategy } from "typeorm-naming-strategies";
 
 export default <TypeOrmModuleOptions>{
-    type: 'mariadb',
-    host: 'localhost',
-    port: 3306,
-    username: 'root',
-    password: 'root',
-    database: 'cowball_mrdaebak',
+    ... require("../../config").db,
     entities: [
         //join(__dirname, '{src,dist}/model/entity/**/*.{js,ts}'),
         Dinner, DinnerIngredient, DinnerOption,
@@ -19,7 +14,7 @@ export default <TypeOrmModuleOptions>{
         Staff, User,
         SteakDonenessDegree, //DinnerStyle,
     ],
-    synchronize: false,
+    synchronize: true,
     /* TODO: false로 바꿀 것! */
     namingStrategy: new SnakeNamingStrategy(),
 };
