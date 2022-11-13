@@ -20,8 +20,12 @@ export class Style {
   @ManyToMany(() => Dinner, (dinner) => dinner.styles)
   dinners: Dinner[];
 
-  @ManyToMany(() => Ingredient)
-  @JoinTable({ name: "style_ingredient" })
+  @ManyToMany(() => Ingredient, (ingredient) => ingredient.styles)
+  @JoinTable({
+    name: "style_ingredient",
+    joinColumn: { name: "style_id", referencedColumnName: "styleId" },
+    inverseJoinColumn: { name: "ingredient_id", referencedColumnName: "ingredientId" },
+  })
   ingredients: Ingredient[];
 
   @OneToMany(() => StyleOption, (styleOption) => styleOption.style)

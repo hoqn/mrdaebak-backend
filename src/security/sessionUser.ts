@@ -1,8 +1,12 @@
-import { ClientTypeQuery } from "@/types/QueryParams";
 import { SecurityRole } from "./role.enum";
 
+export enum ClientType {
+    USER = 'USER',
+    STAFF = 'STAFF',
+}
+
 export interface SessionUser {
-    type: ClientTypeQuery;
+    type: ClientType;
     id: string;
     role: SecurityRole;
 }

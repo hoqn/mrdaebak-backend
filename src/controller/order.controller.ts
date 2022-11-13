@@ -1,9 +1,7 @@
-import { OrderState } from "@/model/entity";
-import { ListParams } from "@/model/list.params";
-import { OrderDirection, OrderParams } from "@/model/order.params";
+import { PageOptionsDto } from "@/model/dto/common.dto";
+import { OrderState } from "@/model/enum";
 import { OrderService } from "@/service/order.service";
-import { ResBody } from "@/types/responseBody";
-import { Body, Controller, Delete, ForbiddenException, Get, Param, Put, Query } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, ForbiddenException, Get, InternalServerErrorException, NotFoundException, Param, Post, Put, Query } from "@nestjs/common";
 
 @Controller('orders')
 export class OrderController {
@@ -15,9 +13,7 @@ export class OrderController {
     async getOrders(
         @Query('user_id') userId?: string,
         @Query('state') orderState?: keyof typeof OrderState,
-        @Query('page') page?: number,
-        @Query('order_by') orderBy?: string,
-        @Query('order_direction') orderDirection?: OrderDirection,
+        @Query() pageOptions?: PageOptionsDto,
     ) {
         const mOrderState = orderState ? OrderState[orderState.toUpperCase()] : undefined;
         if (mOrderState === OrderState.CART) throw new ForbiddenException();
@@ -25,7 +21,20 @@ export class OrderController {
         return await this.orderService.getOrdersBy({ 
                 userId,
                 orderState: mOrderState
-            }, new ListParams(page), new OrderParams(orderBy, orderDirection));
+            }, pageOptions);
+    }
+
+    @Post()
+    async postOrderFromCart(
+        @Body('userId') userId: string
+    ) {
+        return await this.orderService.newOrderFromCart(userId)
+            .catch((e: Error) => {
+                if(e.message === '0') throw new NotFoundException();
+                else if(e.message === '1') throw new BadRequestException('주문하려면 더 많은 정보가 필요합니다.');
+                
+                throw new InternalServerErrorException();
+            });
     }
 
     @Get(':orderId/i/:orderDinnerId')
@@ -33,9 +42,7 @@ export class OrderController {
         @Param('orderId') orderId: number,
         @Param('orderDinnerId') orderDinnerId: number,
     ) {
-        return <ResBody> {
-            result: await this.orderService.getOrderDinner(orderId, orderDinnerId),
-        };
+        return await this.orderService.getOrderDinner(orderId, orderDinnerId);
     }
 
     @Put(':orderId/i/:orderDinnerId')
@@ -43,9 +50,7 @@ export class OrderController {
         @Param('orderId') orderId: number,
         @Param('orderDinnerId') orderDinnerId: number,
     ) {
-        return <ResBody> {
-            result: await this.orderService
-        }
+        
     }
 
     @Delete(':orderId/i/:orderDinnerId')
@@ -61,8 +66,6 @@ export class OrderController {
         @Param('orderId') orderId: number,
         @Body() body: {orderState: keyof typeof OrderState}
     ) {
-        return <ResBody> {
-            result: await this.orderService.setOrderState(orderId, OrderState[body.orderState]),
-        };
+        return await this.orderService.setOrderState(orderId, OrderState[body.orderState]);
     }
 }

@@ -1,9 +1,12 @@
 import {
   Column,
   Entity, JoinColumn,
+  ManyToMany,
   ManyToOne, PrimaryGeneratedColumn
 } from "typeorm";
+import { Dinner } from "./Dinner";
 import { IngredientCategory } from "./IngredientCategory";
+import { Style } from "./Style";
 
 @Entity("ingredient")
 export class Ingredient {
@@ -40,4 +43,10 @@ export class Ingredient {
   )
   @JoinColumn([{ name: "category_id", referencedColumnName: "categoryId" }])
   category: IngredientCategory;
+
+  @ManyToMany(() => Dinner, (dinner) => dinner.ingredients)
+  dinners: Dinner[];
+
+  @ManyToMany(() => Style, (style) => style.ingredients)
+  styles: Style[];
 }

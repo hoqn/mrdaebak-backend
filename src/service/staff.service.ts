@@ -1,10 +1,8 @@
 import { IdDuplicatedException } from "@/exception/IdDuplicatedException";
-import { CreateStaffReq } from "@/model/dto/staff.dto";
+import { PageOptionsDto, PageResultDto, PageResultPromise } from "@/model/dto/common.dto";
+import { CreateStaffReq, UpdateStaffReq } from "@/model/dto/staff.dto";
 import { Staff } from "@/model/entity";
 import { StaffRole } from "@/model/enum";
-import { ListParams } from "@/model/list.params";
-import { ListResult, ListResultPromise } from "@/model/list.result";
-import { OrderParams } from "@/model/order.params";
 import { InjectRepository } from "@nestjs/typeorm";
 import { DeleteResult, ILike, Not, Repository, UpdateResult } from "typeorm";
 import PasswordEncryptor from "./utils/passwordEncryptor";
@@ -14,58 +12,60 @@ export class StaffService {
         @InjectRepository(Staff) private readonly staffRepo: Repository<Staff>
     ) { }
 
-    async createPendingMember(dto: CreateStaffReq) {
+    async addNewMember(role: StaffRole, dto: CreateStaffReq) {
         const existing = await this.staffRepo.findOneBy({ staffId: dto.staffId });
         if(existing) throw new IdDuplicatedException();
 
-        const member = dto.toEntity();
-        member.password = PasswordEncryptor.encrypt(dto.password);
-        member.role = StaffRole.PENDING;
-        
-        await this.staffRepo.save(member);
-
-        member.password = undefined;
+        const member = await this.staffRepo.save(<Staff> {
+            staffId: dto.staffId,
+            password: PasswordEncryptor.encrypt(dto.password),
+            staffName: dto.staffName,
+            phoneNumber: dto.phoneNumber,
+            role: role,
+        });
 
         return member;
     }
 
-    async getMembers(listParams: ListParams, orderParams?: OrderParams): ListResultPromise<Staff> {
-        return this.getMembersBy({}, listParams, orderParams);
+    async getMembers(
+        pageOptions: PageOptionsDto,
+    ): PageResultPromise<Staff> {
+        return this.getMembersBy({}, pageOptions);
     }
 
-    async getMembersBy(query: { staffName?: string, role?: StaffRole },
-        listParams: ListParams, orderParams?: OrderParams
-    ): ListResultPromise<Staff> {
-        const qb = this.staffRepo.createQueryBuilder()
-            .select();
+    async getMembersBy(
+        query: { staffName?: string, role?: StaffRole },
+        pageOptions: PageOptionsDto,
+    ): PageResultPromise<Staff> {
+        const qb = this.staffRepo.createQueryBuilder();
 
         if (query.staffName) qb.andWhere({ staffName: ILike(`%${query.staffName}%`) });
         if (query.role !== undefined) qb.andWhere({ role: query.role });
 
-        if (orderParams) orderParams.adaptTo(qb);
-
-        listParams.adaptTo(qb);
+        if(pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection);
+        qb.skip(pageOptions.skip).take(pageOptions.take);
 
         const [items, count] = await qb.getManyAndCount();
 
-        return new ListResult(listParams, count, items.map(i => { i.password = undefined; return i;}));
+        return new PageResultDto(pageOptions, count, items);
     }
 
     async getMember(staffId: string): Promise<Staff> {
         return await this.staffRepo.findOneBy({ staffId });
     }
 
-    async updateMember(staffId: string, body: Partial<Staff>): Promise<UpdateResult> {
+    async updateMember(staffId: string, body: UpdateStaffReq): Promise<UpdateResult> {
         const qb = this.staffRepo.createQueryBuilder()
             .update()
             .where({ staffId });
 
-        const updateBody: any = {};
+        const updateBody = <Partial<Staff>>{
+            ...body, 
+            role: body.staffRole,
+        };
 
-        if (body.staffName) updateBody.staffName = body.staffName;
-        if (body.phoneNumber) updateBody.phoneNumber = body.phoneNumber;
-        if (body.role) updateBody.role = body.role;
-        if (body.password) updateBody.password = PasswordEncryptor.encrypt(body.password);
+        if (updateBody.password !== undefined)
+            updateBody.password = PasswordEncryptor.encrypt(body.password);
 
         return await qb.set(updateBody)
             .execute();

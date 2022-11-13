@@ -37,12 +37,8 @@ export class OrderDinner {
   @ManyToMany(() => DinnerOption, (dinnerOption) => dinnerOption.orderDinners)
   @JoinTable({
     name: 'order_dinner_option',
-    joinColumns: [
-      { name: 'order_dinner_id', referencedColumnName: 'orderDinnerId' },
-    ],
-    inverseJoinColumns: [
-      { name: 'dinner_option_id', referencedColumnName: 'dinnerOptionId' },
-    ],
+    joinColumn: { name: 'order_dinner_id', referencedColumnName: 'orderDinnerId' },
+    inverseJoinColumn: { name: 'dinner_option_id', referencedColumnName: 'dinnerOptionId' },
   })
   dinnerOptions: DinnerOption[];
 }

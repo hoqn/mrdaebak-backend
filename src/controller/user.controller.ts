@@ -1,13 +1,14 @@
 import { User } from "@/model/entity";
 import { CreateUserDto, PatchUserDto } from "@/model/dto/user.dto";
 import { UserService } from "@/service/user.service";
-import { ResBody } from "@/types/responseBody";
-import { ClientTypeQuery, UserGradeQuery } from "@/types/QueryParams";
 import { Body, Controller, Delete, Get, HttpStatus, NotFoundException, Param, Patch, Post, Query, Res, SetMetadata, UseGuards, Version } from "@nestjs/common";
 import { Response } from "express";
 import { ExclusiveOrRoleGuard, BaseAuthGuard, RoleGuard } from "@/security/guard";
 import { SecurityRoles } from "@/security/role.decorator";
 import { SecurityRole } from "@/security/role.enum";
+import { UserGrade } from "@/model/enum/userGrade.enum";
+import { PageOptionsDto } from "@/model/dto/common.dto";
+import { ClientType } from "@/security";
 
 @Controller('users')
 export class UserController {
@@ -15,108 +16,54 @@ export class UserController {
         private readonly userService: UserService
     ) { }
 
-    // GET /users
-    @Version('1') @Get()
+    @Get()
     @UseGuards(BaseAuthGuard, RoleGuard)
     @SecurityRoles(SecurityRole.OWNER, SecurityRole.STAFF_COOK, SecurityRole.STAFF_DELIVERY)
     async getUsers(
-        @Query('grade') grade: UserGradeQuery|undefined,
-        @Query('user_name') userName: string|undefined,
-        @Res() res: Response,
+        @Query('grade') grade?: keyof typeof UserGrade,
+        @Query('user_name') userName?: string,
+        @Query() pageOptions?: PageOptionsDto,
     ) {
-        try {
-            const users: User[] = await this.userService.getUsersBy({
-                grade: grade === 'vip' ? 1 : grade === 'normal' ? 0 : undefined,
-                userName,
-            });
+            const users = await this.userService.getUsersBy({
+                grade: grade ? UserGrade[grade] : undefined, userName
+            }, pageOptions);
 
-            res.json(<ResBody>{
-                result: {
-                    count: users.length,
-                    items: users.map(user => {
-                        user.password = undefined;
-                        user.cardNumber = undefined;
-                        return user;
-                    }),
-                },
-            });
-            return;
-        } catch(e) {
-            res.status(HttpStatus.INTERNAL_SERVER_ERROR).json({
-                status: HttpStatus.INTERNAL_SERVER_ERROR,
-                message: `${e.message}`,
-            });
-            return;
-        }
+            if(!users) throw new NotFoundException();
+
+            return users;
     }
 
-    // POST /users
-    @Version('1') @Post()
+    @Post()
     async newUser(
-        @Query('type') type: ClientTypeQuery,
-        @Body() dto: CreateUserDto,
-        @Res() res: Response,
+        @Query('type') type: ClientType,
+        @Body() body: CreateUserDto,
     ) {
-        try {
-            const { userId } = await this.userService.createUser(dto) || {};
-
-            if (!userId)
-                throw Error("회원 추가에 실패하였습니다.");
-            
-            res.json({
-                status: HttpStatus.CREATED,
-                userId: userId,
-            });
-            return;
-        } catch(e) {
-            res.status(HttpStatus.NOT_ACCEPTABLE).json({
-                status: HttpStatus.NOT_ACCEPTABLE,
-                message: `${e.message}`,
-            });
-            return;
-        }
+        return await this.userService.createUser(body);
     }
 
-    // GET /users/:userid
-    @Version('1') @Get(':userid')
+    @Version('1') @Get(':userId')
     @UseGuards(BaseAuthGuard, ExclusiveOrRoleGuard)
     @SecurityRoles(SecurityRole.OWNER, SecurityRole.STAFF_COOK, SecurityRole.STAFF_DELIVERY)
-    @SetMetadata('param', 'userid')
+    @SetMetadata('param', 'userId')
     async getUser(
-        @Param('userid') userId: string,
-        @Res() res: Response,
+        @Param('userId') userId: string,
     ) {
         const user = await this.userService.getUserByUserId(userId);
 
-        if (!user) {
-            res.status(HttpStatus.NOT_FOUND).json(<ResBody>{
-                code: 1,
-                message: `${userId} 회원을 찾을 수 없습니다.`,
-            });
-        } else {
-            user.password = undefined;
-            res.json(<ResBody>{
-                result: {
-                    user: user,
-                }
-            });
-        }
-        
-        return;
+        if(!user) throw new NotFoundException();
+
+        return user;
     }
 
-    @Version('1') @Patch(':userid')
+    @Version('1') @Patch(':userId')
     @UseGuards(BaseAuthGuard, ExclusiveOrRoleGuard)
     @SecurityRoles()
-    @SetMetadata('param', 'userid')
+    @SetMetadata('param', 'userId')
     async patchUser(
-        @Param('userid') userId: string,
+        @Param('userId') userId: string,
         @Body() dto: PatchUserDto,
     ) {
-        await this.userService.updateUser(userId, dto);
-        return <ResBody>{
-            message: '성공하였습니다',
-        };
+        return await this.userService.updateUser(userId, dto);
     }
 
     @Delete(':userId')
@@ -126,13 +73,6 @@ export class UserController {
     async deleteUser(
         @Param('userId') userId: string,
     ) {
-        const result = await this.userService.deleteUser(userId);
-
-        if(result.affected < 1) throw new NotFoundException();
-
-        return <ResBody> {
-            code: 0,
-            message: '성공하였습니다.',
-        };
+        return await this.userService.deleteUser(userId);
     }
 }

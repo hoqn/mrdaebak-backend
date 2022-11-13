@@ -1,7 +1,6 @@
 import { NoIdException } from "@/exception";
 import { SecurityRole } from "@/security/role.enum";
-import { SessionUser } from "@/security/sessionUser";
-import { ClientTypeQuery } from "@/types/QueryParams";
+import { ClientType, SessionUser } from "@/security/sessionUser";
 import { Injectable, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { StaffService } from "./staff.service";
@@ -19,14 +18,14 @@ export class AuthService {
     async validateUserToken(payload: SessionUser) {
         console.log('Payload: ', payload);
 
-        if(payload.type === 'customer') {
+        if(payload.type === ClientType.USER) {
             return await this.userService.getUserByUserId(payload.id)
                 .then(u => u ? {
-                    type: 'customer',
+                    type: ClientType.USER,
                     role: SecurityRole.USER,
                     id: u.userId
                 }: null);
-        } else if(payload.type === 'staff') {
+        } else if(payload.type === ClientType.STAFF) {
             return await this.staffService.getMember(payload.id)
                 .then(u => {
                     if(u) {
@@ -34,7 +33,7 @@ export class AuthService {
                         const role = SecurityRole.fromStaffRole(u.role);
                         if(!role) return null;
                         return {
-                            type: 'staff',
+                            type: ClientType.STAFF,
                             role: role,
                             id: u.staffId,
                         }
@@ -47,16 +46,16 @@ export class AuthService {
     }
 
     async loginUser(userId: string, password: string) {
-        return this.login('customer', userId, password);
+        return this.login(ClientType.USER, userId, password);
     }
     async loginStaff(staffId: string, password: string) {
-        return this.login('staff', staffId, password);
+        return this.login(ClientType.STAFF, staffId, password);
     }
 
-    private async login(type: ClientTypeQuery, id: string, password: string): Promise<string> {
+    private async login(type: ClientType, id: string, password: string): Promise<string> {
         let e: Error = undefined;
         
-        const requiredPassword = type === 'staff'
+        const requiredPassword = type === ClientType.STAFF
             ? await this.staffService.getMember(id).then(member => {
                 if(member) return member.password
                 else e = new NoIdException();

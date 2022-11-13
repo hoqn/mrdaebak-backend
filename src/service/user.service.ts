@@ -1,5 +1,8 @@
+import { IdDuplicatedException } from "@/exception";
+import { PageOptionsDto, PageResultDto, PageResultPromise } from "@/model/dto/common.dto";
 import { CreateUserDto, PatchUserDto } from "@/model/dto/user.dto";
 import { User } from "@/model/entity";
+import { UserGrade } from "@/model/enum/userGrade.enum";
 import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 
 import { InjectRepository } from "@nestjs/typeorm";
@@ -16,39 +19,42 @@ export class UserService {
         @InjectRepository(User) private readonly userRepo: Repository<User>
     ) { }
 
-    async createUser(dto: CreateUserDto) {
+    async createUser(body: CreateUserDto) {
         // ID 중복 체크
-        const existing = await this.userRepo.findOneBy({ userId: dto.userId });
-        if (existing) throw new HttpException("ID가 중복됩니다.", HttpStatus.FORBIDDEN);
+        const existing = await this.userRepo.findOneBy({ userId: body.userId });
+        if (existing) throw new IdDuplicatedException();
 
-        const user = dto.toEntity();
+        const qb = this.userRepo.createQueryBuilder()
+            .insert();
 
-        user.password = PasswordEncryptor.encrypt(dto.password);
+        qb.values({
+            ...body,
+            password: PasswordEncryptor.encrypt(body.password),
+        });
 
-        user.joinDate = new Date();
-        user.grade = 0;
-        user.orderNumber = 0;
-        user.orders = [];
-
-        await this.userRepo.save(user);
-
-        user.password = undefined;
-        return user;
+        return qb.execute();
     }
 
     async getUsers() {
         return await this.userRepo.find();
     }
 
-    async getUsersBy({
-        grade, userName
-    }: {
-        grade?: number, userName?: string,
-    }) {
-        return await this.userRepo.findBy({
-            grade,
-            userName: userName ? ILike(`%${userName}%`) : undefined
-        });
+    async getUsersBy(
+        query: {
+            grade?: UserGrade, userName?: string,
+        }, pageOptions: PageOptionsDto,
+    ): PageResultPromise<User> {
+        const qb = this.userRepo.createQueryBuilder();
+
+        if(query.userName) qb.andWhere({ userName: ILike(`%${query.userName}%`) });
+        if(query.grade !== undefined) qb.andWhere({ grade: query.grade});
+
+        if(pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection);
+        qb.skip(pageOptions.skip).take(pageOptions.take);
+
+        const [items, count] = await qb.getManyAndCount();
+
+        return new PageResultDto(pageOptions, count, items);
     }
 
     async getUserByUserId(userId: string): Promise<User> {
@@ -56,7 +62,7 @@ export class UserService {
     }
 
     async updateUser(userId: string, dto: PatchUserDto) {
-        const user = await this.userRepo.findOneBy({userId});
+        /*const user = await this.userRepo.findOneBy({userId});
 
         if(dto.userName) user.userName = dto.userName;
         if(dto.address) user.address = dto.address;
@@ -66,7 +72,13 @@ export class UserService {
         if(dto.password)
             user.password = PasswordEncryptor.encrypt(dto.password);
 
-        await this.userRepo.save(user);
+        await this.userRepo.save(user);*/
+        const qb = this.userRepo.createQueryBuilder()
+            .update();
+        
+        qb.set(dto);
+
+        return await qb.execute();
     }
 
     async deleteUser(userId: string) {

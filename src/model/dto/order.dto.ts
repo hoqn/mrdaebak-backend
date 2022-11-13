@@ -1,38 +1,15 @@
-import { IsArray, IsCreditCard, IsDate, IsDateString, IsEnum, IsNumber, IsNumberString, IsObject, IsOptional, IsPhoneNumber, IsString } from "class-validator";
+import { PartialType } from "@nestjs/mapped-types";
+import { Type } from "class-transformer";
+import { IsArray, IsCreditCard, IsDate, IsDateString, IsEnum, IsInt, IsNumber, IsNumberString, IsObject, IsOptional, IsPhoneNumber, IsString, ValidateIf } from "class-validator";
+import { Moment } from "moment";
+
+/**
+ * ORDER
+ */
 
 export class CreateOrderDto {
-    @IsDate()
-    rsvDate: Date;
-
-    @IsString()
-    deliveryAddress: string;
-
-    @IsPhoneNumber('KR')
-    phoneNumber: string;
-
-    @IsCreditCard()
-    cardNumber: string;
-
-    @IsString()
-    request: string;
-}
-
-export class AddOrderDinnerDto {
-    @IsNumber()
-    degreeId: number;
-
-    @IsNumber()
-    dinnerId: number;
-    @IsArray()
-    dinnerOptionIds: number[];
-
-    @IsNumber()
-    styleId: number;
-}
-
-export class UpdateOrderMetaDto {
     @IsDateString() @IsOptional()
-    rsvDate?: Date;
+    rsvDate?: string;
 
     @IsString() @IsOptional()
     deliveryAddress?: string;
@@ -46,3 +23,25 @@ export class UpdateOrderMetaDto {
     @IsString() @IsOptional()
     request?: string;
 }
+
+export class UpdateOrderMetaDto extends PartialType(CreateOrderDto) { }
+
+/**
+ * ORDERDINNER
+ */
+
+ export class CreateOrderDinnerDto {
+    @IsNumber()
+    degreeId: number;
+
+    @IsNumber()
+    dinnerId: number;
+
+    @IsArray()
+    dinnerOptionIds: number[];
+
+    @IsNumber()
+    styleId: number;
+}
+
+export class UpdateOrderDinnerDto extends PartialType(CreateOrderDinnerDto) { }

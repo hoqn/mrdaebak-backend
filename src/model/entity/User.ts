@@ -1,15 +1,22 @@
+import { Exclude } from "class-transformer";
 import { Column, CreateDateColumn, Entity, OneToMany, PrimaryColumn } from "typeorm";
 import { UserGrade } from "../enum/userGrade.enum";
+import { Client } from "./Client.super";
 import { Order } from "./Order";
 
 @Entity("user")
-export class User {
+export class User  extends Client{
+  override get _id() {
+    return this.userId;
+  }
+
   @PrimaryColumn("varchar", { length: 50 })
   userId: string;
 
   @Column("varchar", { length: 50 })
   userName: string;
 
+  @Exclude()
   @Column("varchar", {length: 255 })
   password: string;
 

@@ -1,19 +1,6 @@
-import { NoIdException } from "@/exception";
-import { LoginUserDto } from "@/model/dto/user.dto";
 import { AuthService } from "@/service/auth.service";
-import { ClientTypeQuery } from "@/types/QueryParams";
-import { ResBody } from "@/types/responseBody";
-import { HttpException, HttpStatus, Inject, Req, Res, UseGuards, Version } from "@nestjs/common";
-import {
-    Controller,
-    Body,
-    Query,
-    Get,
-    Post,
-    Delete,
-} from "@nestjs/common";
-import { AuthGuard } from "@nestjs/passport";
-import { Request, Response } from "express";
+import { Body, Controller, Delete, Post, Res, UnauthorizedException, Version } from "@nestjs/common";
+import { Response } from "express";
 
 @Controller('auth')
 export class AuthController {
@@ -36,27 +23,13 @@ export class AuthController {
     @Version('1')
     @Post('staff')
     async loginStaff(
-        @Res() res: Response,
         @Body() dto: { staffId: string, password: string },
     ) {
-        try {
-            const token = await this.authService.loginStaff(dto.staffId, dto.password);
-            
-            res.json(<ResBody>{
-                result: {
-                    'access-token': token,
-                },
-            });
-        } catch(e) {
-            if(e instanceof NoIdException)
-                res.status(HttpStatus.NOT_FOUND).json(<ResBody>{
-                    code: 1,
-                    message: 'ID가 존재하지 않습니다.',
-                });
-            else
-                throw HttpException;
-        }
-        return;
+        const token = await this.authService.loginStaff(dto.staffId, dto.password);
+
+        if(!token) throw new UnauthorizedException();
+
+        return { 'access-token': token };
     }
 
     @Version('1')

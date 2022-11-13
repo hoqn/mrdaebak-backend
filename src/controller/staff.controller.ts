@@ -1,13 +1,10 @@
 import { IdDuplicatedException } from "@/exception";
+import { PageOptionsDto } from "@/model/dto/common.dto";
 import { CreateStaffReq, UpdateStaffReq } from "@/model/dto/staff.dto";
 import { Staff } from "@/model/entity";
 import { StaffRole } from "@/model/enum";
-import { ListParams } from "@/model/list.params";
-import { OrderDirection, OrderParams } from "@/model/order.params";
 import { StaffService } from "@/service/staff.service";
-import { ResBody } from "@/types/responseBody";
-import { BadRequestException, Body, Controller, Delete, ForbiddenException, Get, HttpException, HttpStatus, InternalServerErrorException, NotAcceptableException, NotFoundException, Param, Patch, Post, Query, Res, Version } from "@nestjs/common";
-import { Response } from "express";
+import { Body, Controller, Delete, Get, InternalServerErrorException, NotAcceptableException, NotFoundException, Param, Patch, Post, Query } from "@nestjs/common";
 
 @Controller('staff')
 export class StaffController {
@@ -16,8 +13,14 @@ export class StaffController {
     ) { }
 
     @Post()
-    async createMember(@Body() body: CreateStaffReq) {
-        return await this.staffService.createPendingMember(body)
+    async createMember(
+        @Body() body: CreateStaffReq & {
+            role: keyof Pick<typeof StaffRole, 'PENDING_COOK'|'PENDING_DELIVERY'>
+        },
+    ) {
+        const role = body.staffRole;
+
+        return await this.staffService.addNewMember(role, body)
             .catch(e => {
                 if(e instanceof IdDuplicatedException) 
                     throw new NotAcceptableException(undefined, 'ID가 중복됩니다.')
@@ -29,16 +32,14 @@ export class StaffController {
     @Get()
     async getMembers(
         @Query('staff_name') staffName?: string,
-        @Query('role') role?: 'PENDING' | 'OWNER' | 'DELIVERY' | 'COOK',
-        @Query('page') page?: number,
-        @Query('order_by') orderBy?: string,
-        @Query('order_direction') orderDirection?: OrderDirection,
+        @Query('role') role?: keyof typeof StaffRole,
+        @Query() pageOptions?: PageOptionsDto,
     ) {
         const staffRole = StaffRole[role];
 
         return await this.staffService.getMembersBy({
             staffName, role: staffRole,
-        }, new ListParams(page), new OrderParams(orderBy, orderDirection)); 
+        }, pageOptions);
     }
 
     @Get(':staffId')
@@ -61,13 +62,7 @@ export class StaffController {
         @Param('staffId') staffId: string,
         @Body() body: UpdateStaffReq,
     ) {
-        const role = body.toStaffRole();
-        if (!role) throw new BadRequestException('필수 인자 role이 누락되었습니다.');
-
-        const result = await this.staffService.updateMember(staffId, {
-            ...body,
-            role,
-        });
+        const result = await this.staffService.updateMember(staffId, body);
 
         if(!result) throw new NotFoundException();
 

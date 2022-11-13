@@ -4,6 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule, CartModule, MenuModule, OrderModule, UserModule } from '@/module';
 
 import typeormConfig from '@/config/typeorm.config';
+import { IngredientModule } from './module/ingredient.module';
 
 const typeOrmModule = TypeOrmModule.forRoot(typeormConfig);
 
@@ -15,6 +16,7 @@ const typeOrmModule = TypeOrmModule.forRoot(typeormConfig);
     UserModule,
     OrderModule,
     CartModule,
+    IngredientModule,
   ]
 })
 export class AppModule { }

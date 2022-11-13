@@ -1,22 +1,13 @@
 import {
-  Column,
-  Entity,
-  Index,
-  JoinColumn,
+  BeforeUpdate,
+  Column, Entity, JoinColumn,
   ManyToOne,
   OneToMany,
-  PrimaryGeneratedColumn,
+  PrimaryGeneratedColumn
 } from "typeorm";
-import { User } from "./User";  
+import { OrderState } from "../enum";
 import { OrderDinner } from "./OrderDinner";
-
-export enum OrderState {
-  CART = 0x00,
-  WAITING = 0x10,
-  COOKING = 0x21,
-  IN_DELIVERY = 0x22,
-  DONE = 0xFF,
-}
+import { User } from "./User";
 
 @Entity("order")
 export class Order {
@@ -29,29 +20,29 @@ export class Order {
   @Column("timestamp", { nullable: true })
   orderDate: Date | null;
 
-  @Column("timestamp", { name: "rsv_date", nullable: true })
+  @Column("timestamp", { nullable: true })
   rsvDate: Date | null;
 
-  @Column("int", { name: "order_state", nullable: true, default: OrderState.CART })
-  orderState: OrderState; //number | null;
+  @Column("int", { default: OrderState.CART })
+  orderState: OrderState = OrderState.CART;
 
-  @Column("varchar", { name: "delivery_address", nullable: true, length: 255 })
+  @Column("varchar", { nullable: true, length: 255 })
   deliveryAddress: string | null;
 
-  @Column("varchar", { name: "phone_number", nullable: true, length: 50 })
+  @Column("varchar", { nullable: true, length: 50 })
   phoneNumber: string | null;
 
-  @Column("varchar", { name: "card_number", nullable: true, length: 50 })
+  @Column("varchar", { nullable: true, length: 50 })
   cardNumber: string | null;
 
-  @Column("int", { name: "total_price", nullable: true })
+  @Column("int", { nullable: true })
   totalPrice: number | null;
 
-  @Column("int", { name: "payment_price", nullable: true })
+  @Column("int", { nullable: true })
   paymentPrice: number | null;
 
-  @Column("varchar", { name: "request", nullable: true, length: 255 })
-  request: string | null;
+  @Column("varchar", { length: 255 })
+  request: string = '';
 
   @ManyToOne(() => User, (user) => user.orders)
   @JoinColumn([{ name: "user_id", referencedColumnName: "userId" }])

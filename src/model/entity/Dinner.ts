@@ -11,14 +11,21 @@ export class Dinner {
   @Column("varchar", { length: 50 })
   dinnerName: string;
 
+  @Column("varchar", { length: 100 })
+  dinnerNameEn: string;
+
   @Column("int")
   dinnerPrice: number;
 
   @Column("varchar", { length: 255 })
   dinnerDetail: string;
 
-  @ManyToMany(() => Ingredient)
-  @JoinTable({ name: "dinner_ingredient" })
+  @ManyToMany(() => Ingredient, (ingredient) => ingredient.dinners)
+  @JoinTable({ 
+    name: "dinner_ingredient",
+    joinColumns: [{ name: "dinner_id", referencedColumnName: "dinnerId" }],
+    inverseJoinColumns: [{ name: "ingredient_id", referencedColumnName: "ingredientId" }],
+  })
   ingredients: Ingredient[];
 
   @OneToMany(() => DinnerOption, (dinnerOption) => dinnerOption.dinner)

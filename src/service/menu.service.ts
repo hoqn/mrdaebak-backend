@@ -1,7 +1,5 @@
+import { PageOptionsDto, PageResultDto, PageResultPromise } from "@/model/dto/common.dto";
 import { Dinner, DinnerOption, Style, StyleOption } from "@/model/entity";
-import { ListParams } from "@/model/list.params";
-import { ListResult, ListResultPromise } from "@/model/list.result";
-import { OrderParams } from "@/model/order.params";
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -16,18 +14,17 @@ export class MenuService {
     ) {}
 
     async getAllDinners(
-        listParams: ListParams, orderParams?: OrderParams
-    ): ListResultPromise<Dinner> {
+        pageOptions: PageOptionsDto
+    ): PageResultPromise<Dinner> {
         const qb = this.dinnerRepo.createQueryBuilder()
             .select();
-        
-        if(orderParams) orderParams.adaptTo(qb);
 
-        listParams.adaptTo(qb);
+        if(pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection);
+        qb.skip(pageOptions.skip).take(pageOptions.take);
 
         const [items, count] = await qb.getManyAndCount();
 
-        return new ListResult(listParams, count, items);
+        return new PageResultDto(pageOptions, count, items);
     }
 
     async getDinnerById(dinnerId: number) {
@@ -45,17 +42,31 @@ export class MenuService {
         return await this.dinnerOptionRepo.findOneBy({ dinnerOptionId });
     }
 
-    async getAllStyles(): Promise<Style[]> {
-        return await this.styleRepo.find();
+    async getAllStyles(
+        pageOptions: PageOptionsDto,
+    ): PageResultPromise<Style> {
+        return await this.getStylesBy({}, pageOptions);
     }
 
-    async getStylesWithDinnerId(dinnerId: number): Promise<Style[]> {
-        return await this.dinnerRepo.findOne({
-            relations: { styles: true },
-            where: {
-                dinnerId: dinnerId,
-            },
-        }).then(dinner => dinner.styles);
+    async getStylesBy(
+        query: { dinnerId?: number },
+        pageOptions: PageOptionsDto,
+    ): PageResultPromise<Style> {
+        const qb = this.styleRepo.createQueryBuilder('s');
+        
+        if(query.dinnerId !== undefined) {
+            qb
+                .innerJoin('dinner_style', 'ds', 's.style_id=ds.style_id')
+                .innerJoin('dinner', 'd', 'ds.dinner_id=d.dinner_id')
+                .where('ds.dinner_id=:dinnerId', { dinnerId: query.dinnerId });
+        }
+
+        if(pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection);
+        qb.skip(pageOptions.skip).take(pageOptions.take);
+
+        const [items, count] = await qb.getManyAndCount();
+
+        return new PageResultDto(pageOptions, count, items);
     }
 
     async getStyleById(styleId: number) {

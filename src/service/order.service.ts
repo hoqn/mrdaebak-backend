@@ -1,12 +1,11 @@
-import { AddOrderDinnerDto, UpdateOrderMetaDto } from "@/model/dto/order.dto";
-import { DinnerOption, Order, OrderDinner, OrderState } from "@/model/entity";
-import { ListParams } from "@/model/list.params";
-import { ListResult, ListResultPromise } from "@/model/list.result";
-import { OrderParams } from "@/model/order.params";
+import { PageOptionsDto, PageResultDto, PageResultPromise } from "@/model/dto/common.dto";
+import { CreateOrderDinnerDto, UpdateOrderMetaDto } from "@/model/dto/order.dto";
+import { DinnerOption, Order, OrderDinner, User } from "@/model/entity";
+import { OrderState, UserGrade } from "@/model/enum";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectDataSource, InjectRepository } from "@nestjs/typeorm";
-import { isPhoneNumber, isString } from "class-validator";
-import { DataSource, DeleteResult, FindOptionsOrder, Not, Repository, UpdateResult } from "typeorm";
+import { isDate, isNumberString, isPhoneNumber, isString } from "class-validator";
+import { DataSource, DeleteResult, FindOptionsOrder, Not, QueryBuilder, Repository, UpdateQueryBuilder, UpdateResult } from "typeorm";
 import { MenuService } from "./menu.service";
 
 @Injectable()
@@ -19,36 +18,119 @@ export class OrderService {
         @InjectDataSource() private readonly dataSource: DataSource,
     ) { }
 
-    public async getOrdersBy(query: { userId?: string, orderState?: OrderState },
-        listParams: ListParams, orderParams?: OrderParams
-    ): ListResultPromise<Order> {
+    /**
+     * Order
+     */
+
+    public async getAllOrders(
+        pageOptions: PageOptionsDto
+    ) {
+        return this.getOrdersBy({}, pageOptions);
+    }
+
+    public async getOrdersBy(
+        query: { userId?: string, orderState?: OrderState },
+        pageOptions: PageOptionsDto
+    ): PageResultPromise<Order> {
         const qb = this.orderRepo.createQueryBuilder()
             .select();
+        
+        qb.andWhere({ orderState: Not(OrderState.CART) });
 
         if (query.userId) qb.andWhere({ userId: query.userId });
         if (query.orderState) qb.andWhere({ orderState: query.orderState });
 
-        if (orderParams) orderParams.adaptTo(qb);
-        listParams.adaptTo(qb);
+        if (pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection);
+        qb.skip(pageOptions.skip).take(pageOptions.take);
 
         const [items, count] = await qb.getManyAndCount();
 
-        return new ListResult(listParams, count, items);
+        // CART가 아닌 실제 주문이므로, 가격을 다시 계산할 필요는 없음.
+
+        return new PageResultDto(pageOptions, count, items);
     }
 
-    public async getOrCreateCart(userId: string, withItems?: boolean): Promise<[number, Order]> {
-        const order = await this.getCart(userId, withItems);
-
-        if (order)
-            return [1, order];
-        else
-            return [2, await this.createEmptyCart(userId)];
+    public async getOrderById(orderId: number) {
+        return this.orderRepo.createQueryBuilder()
+            .where({ orderId })
+            .getOne();
     }
 
-    private async getCart(userId: string, withItems?: boolean): Promise<Order> {
+    public async updateOrder(orderId: number, body: UpdateOrderMetaDto) {
+        const qb = this.orderRepo.createQueryBuilder()
+            .update();
+        
+            qb.set({
+                ...body
+            });
+
+            return qb.execute();
+    }
+
+    /*public async setOrderState(orderId: number, state: OrderState) {
+        const qb = this.orderRepo.createQueryBuilder('o')
+            .update();
+
+        qb.set({ orderState: state });
+
+        return qb.execute();
+    }*/
+
+    /**
+     * ORDERDINNER
+     */
+
+    public async addOrderDinner(orderId: number, dto: CreateOrderDinnerDto) {
+        return this.orderDinnerRepo.save({ orderId, ...dto });
+    }
+
+    /*public async updateOrderDinner(orderDinnerId: number, dto) {
+
+    }*/
+
+    public async deleteOrderDinner(orderDinnerId: number) {
+
+    }
+
+    /**
+     * CART -> ORDER
+     */
+
+    public async newOrderFromCart(userId: string) {
+        const cart = await this.getCart(userId);
+
+        if(!cart) throw new Error('0');
+        if(!this.isOrderable(cart)) throw new Error('1');
+
+        const userGrade: UserGrade
+            = await this.dataSource.getRepository(User).createQueryBuilder('u')
+                .select(['grade']).execute();
+        
+        const discount = userGrade === UserGrade.VIP ? 10000 : 0;
+
+        const qb = await this.makeUpdatePriceOfOrder(cart, discount);
+
+        return await qb.set({ 
+            orderDate: () => 'NOW()',
+            orderState: OrderState.WAITING,
+         }).execute();
+    }
+
+    /**
+     * CART
+     */
+
+    public async getOrCreateCart(userId: string): Promise<Order> {
+        const order = await this.getCart(userId);
+        if (!order) return await this.createEmptyCart(userId);
+        
+        return order;
+    }
+
+    private async getCart(userId: string): Promise<Order> {
         const order = await this.orderRepo.findOne({
             relations: {
-                orderDinners: withItems ? { dinnerOptions: true } : false
+                orderDinners: { dinnerOptions: true }
             },
             where: {
                 userId,
@@ -56,11 +138,13 @@ export class OrderService {
             },
         });
 
+        if (!order) return null;
+
         if (order.orderDinners) {
-            return this.applyPriceOrder(order);
-        } else {
-            return order;
+            (await this.makeUpdatePriceOfOrder(order, 0)).execute();
         }
+
+        return order;
     }
 
     private async createEmptyCart(userId: string): Promise<any> {
@@ -70,14 +154,7 @@ export class OrderService {
             orderDinners: [],
         });
     }
-
-    public async getAllOrders(): Promise<any> {
-        return await this.orderRepo
-            .createQueryBuilder()
-            .select()
-            .execute();
-    }
-
+/*
     public async addToOrder(orderId: number, item: AddOrderDinnerDto) {
         const dinner = await this.menuService.getDinnerById(item.dinnerId);
         const style = await this.menuService.getStyleById(item.styleId);
@@ -88,10 +165,6 @@ export class OrderService {
         });
 
         if (!dinner || !style || !order) throw new NotFoundException();
-
-        /*const orderDinnerOptions: DinnerOption[] = item.dinner.dinnerOptionIds.map<DinnerOption>(
-            async (dinnerOptionId) => await this.menuService.getDinnerOption(dinnerOptionId)
-        );*/
 
         const orderDinnerOptions: DinnerOption[] = [];
 
@@ -114,7 +187,7 @@ export class OrderService {
 
         return this.applyPriceOrder(order);
     }
-
+*/
     public async getOrderDinner(orderId: number, orderDinnerId: number) {
         return this.orderDinnerRepo.findOne({
             where: { orderId, orderDinnerId }
@@ -124,14 +197,7 @@ export class OrderService {
     public async updateOrderMeta(orderId: number, dto: UpdateOrderMetaDto): Promise<UpdateResult> {
         const order: any = { ...dto };
 
-        //if (dto.rsvDate) order.rsvDate = dto.rsvDate;
-        //if (dto.deliveryAddress) order.deliveryAddress = dto.deliveryAddress;
-        //if (dto.phoneNumber) order.phoneNumber = dto.phoneNumber;
-        //if (dto.cardNumber) order.cardNumber = dto.cardNumber;
-        //if (dto.request) order.request = dto.request;
-
-        return await this.orderRepo
-            .createQueryBuilder()
+        return await this.orderRepo.createQueryBuilder()
             .update()
             .set(order)
             .where({ orderId })
@@ -144,44 +210,6 @@ export class OrderService {
             .delete()
             .where({ orderId, orderDinnerId })
             .execute();
-    }
-
-    public async newOrderFromCart(userId: string) {
-        /*const result = await this.orderRepo
-            .createQueryBuilder()
-            .update()
-            .set({
-                orderState: OrderState.WAITING,
-            })
-            .where({ userId, orderState: OrderState.CART })
-            .execute();*/
-        const [, order] = await this.getOrCreateCart(userId, true);
-
-        /* 주문 가능한지 검사 */
-        if (!order) throw new NotFoundException();
-        if (!this.isOrderable(order)) throw new BadRequestException();
-        order.orderState = OrderState.WAITING;
-        order.orderDate = new Date();
-
-        await this.applyPriceOrder(order)
-
-        /* TODO: 실시간 알림 기능 추가 */
-
-        return await this.orderRepo.save(order);
-    }
-
-    private isOrderable(order: Order): boolean {
-        if (
-            order.orderId &&
-            order.userId &&
-            order.rsvDate && order.rsvDate.getTime() > (new Date()).getTime() &&
-            order.deliveryAddress &&
-            isPhoneNumber(order.phoneNumber, 'KR') &&
-            isString(order.cardNumber)
-        )
-            return true;
-        else
-            return false;
     }
 
     public async setOrderState(orderId: number, orderState: OrderState) {
@@ -199,7 +227,7 @@ export class OrderService {
         return result;
     }
 
-    public async updateOrderDinner(orderId: number, orderDinnerId: number, dto: Partial<AddOrderDinnerDto>) {
+    public async updateOrderDinner(orderId: number, orderDinnerId: number, dto: Partial<CreateOrderDinnerDto>) {
         /*await this.orderDinnerRepo
             .createQueryBuilder()
             .update()
@@ -225,8 +253,7 @@ export class OrderService {
 
         await this.orderDinnerRepo.save(orderDinner);
 
-        await this.dataSource
-            .createQueryBuilder()
+        await this.dataSource.createQueryBuilder()
             .delete()
             .from('order_dinner_option')
             .where('order_id = :orderId, order_dinner_id = :orderDinnerId', {
@@ -249,23 +276,65 @@ export class OrderService {
             .execute();
     }
 
-    public async applyPriceOrder(order: Order): Promise<Order> {
-        let price = 0;
 
-        console.log(order.orderDinners);
 
-        for (let orderDinner of order.orderDinners) {
-            orderDinner = await this.applyPriceOrderDinner(orderDinner);
-            price += orderDinner.totalDinnerPrice;
-        }
 
-        order.totalPrice = price;
 
-        return this.orderRepo.save(order);
+
+
+
+
+    private isOrderable(order: Order): boolean {
+        return (
+            order &&
+            isDate(order.rsvDate) &&
+            isString(order.deliveryAddress) &&
+            isPhoneNumber(order.phoneNumber, 'KR') &&
+            isNumberString(order.cardNumber)
+        );
     }
 
-    private async applyPriceOrderDinner(orderDinner: OrderDinner): Promise<OrderDinner> {
+    private async makeUpdatePriceOfOrder(order: Order, discount: number, cascade: boolean = true, _qb?: UpdateQueryBuilder<Order>) {
+        const qb = _qb ?? this.orderRepo.createQueryBuilder('o').update();
+
+        let price: number = 0;
+
+        for(const orderDinner of order.orderDinners) {
+            const tempPrice = await this.getPriceOfOrderDinner(orderDinner);
+            if(cascade) {
+                await this.orderDinnerRepo.createQueryBuilder('od')
+                    .update()
+                    .set({ totalDinnerPrice: tempPrice })
+                    .execute()
+                    .then(() => {
+                        orderDinner.totalDinnerPrice = tempPrice;
+                    });
+            }
+            price += tempPrice;
+        }
+
+        qb.set({ totalPrice: price, paymentPrice: price - discount });
+        qb.setParameter('totalPrice', price);
+        
+        return qb;
+    }
+
+    /*private async getUpdatePriceOfOrderQueryBuilder(order: Order, _qb?: UpdateQueryBuilder<Order>): UpdateQueryBuilder<Order> {
+        const qb = _qb ?? this.orderRepo.createQueryBuilder('o').update();
+
         let price = 0;
+        const setObj= {};
+
+        for(const orderDinner of order.orderDinners) {
+            const tempPrice = await this.getPriceOfOrderDinner(orderDinner);
+            price += tempPrice;
+        }
+
+        return qb;
+    }*/
+
+    private async getPriceOfOrderDinner(orderDinner: OrderDinner) {
+        let price: number = 0;
 
         const dinner = await this.menuService.getDinnerById(orderDinner.dinnerId);
         price += dinner.dinnerPrice;
@@ -273,16 +342,20 @@ export class OrderService {
         const style = await this.menuService.getStyleById(orderDinner.styleId);
         price += style.stylePrice;
 
-        if (orderDinner.dinnerOptions && orderDinner.dinnerOptions.length > 0) {
-            orderDinner.dinnerOptions.forEach(option => {
-                price += option.dinnerOptionPrice;
-            });
-        }
+        orderDinner.dinnerOptions.forEach(option => {
+            price += option.dinnerOptionPrice;
+        });
 
-        orderDinner.totalDinnerPrice = price;
-
-        return this.orderRepo.save(orderDinner);
+        return price;
     }
+
+
+
+
+
+
+
+
 }
 
 export namespace OrderService {

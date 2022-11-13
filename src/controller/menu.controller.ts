@@ -1,113 +1,77 @@
-import { Style } from "@/model/entity";
-import { ListParams } from "@/model/list.params";
-import { OrderDirection, OrderParams } from "@/model/order.params";
-import { ResBody } from "@/types/responseBody";
-import { Controller, Get, HttpStatus, Param, Query, Res } from "@nestjs/common";
-import { Response } from "express";
+import { PageOptionsDto, PageResultPromise } from "@/model/dto/common.dto";
+import { Dinner, Style } from "@/model/entity";
+import { IngredientService } from "@/service";
+import { Controller, Get, HttpStatus, NotFoundException, Param, Query, Res } from "@nestjs/common";
 import { MenuService } from "src/service/menu.service";
 
 @Controller('menu')
 export class MenuController {
-    constructor(private readonly menuService: MenuService) {}
+    constructor(
+        private readonly menuService: MenuService,
+        private readonly ingredientService: IngredientService
+    ) {}
     
     @Get('dinners')
     async getDinners(
-        @Query('page') page?: number,
-        @Query('order_by') orderBy?: string,
-        @Query('order_direction') orderDirection?: OrderDirection
-    ) {
-        return await this.menuService.getAllDinners(
-            new ListParams(page),
-            new OrderParams(orderBy, orderDirection),
-        );
+        @Query() pageOptions: PageOptionsDto,
+    ): PageResultPromise<Dinner> {
+        return await this.menuService.getAllDinners(pageOptions);
     }
 
     @Get('dinners/:dinnerId')
     async getDinner(
-        @Res() res: Response,
         @Param('dinnerId') dinnerId: number,
     ) {
         const dinner = await this.menuService.getDinnerById(dinnerId);
 
-        if(!dinner) {
-            res.status(HttpStatus.NOT_FOUND).json(<ResBody>{
-                code: 0,
-                message: '해당 디너가 존재하지 않습니다.',
-            });
-            return;
-        }
+        if(!dinner) throw new NotFoundException();
 
-        res.json(<ResBody>{
-            result: dinner,
-        });
-        return;
+        return dinner;
     }
 
     @Get('dinners/:dinnerId/options')
     async getDinnerOptions(
-        @Res() res: Response,
         @Param('dinnerId') dinnerId: number,
     ) {
-        const options = await this.menuService.getDinnerOptions(dinnerId);
+        return await this.menuService.getDinnerOptions(dinnerId);
+    }
 
-        if(!options) {
-            res.status(HttpStatus.NOT_FOUND).json(<ResBody>{
-                code: 0,
-                message: '해당 디너 또는 옵션이 존재하지 않습니다.',
-            });
-            return;
-        }
-
-        res.json(<ResBody>{
-            result: {
-                count: options.length,
-                page: 1,
-                items: options,
-            }
-        });
-        return;
+    @Get('dinners/:dinnerId/ingredients')
+    async getDinnerIngredients(
+        @Param('dinnerId') dinnerId: number,
+        @Query() pageOptions: PageOptionsDto,
+    ) {
+        return await this.ingredientService.getIngredientsBy({ 
+            dinnerId 
+        }, pageOptions);
     }
 
     @Get('styles')
     async getStyles(
-        @Query('dinner_id') dinnerId: number,
-        @Res() res: Response,
+        @Query('dinner_id') dinnerId?: number,
+        @Query() pageOptions?: PageOptionsDto,
     ) {
-        const styles: Style[] = 
-            dinnerId
-                ? await this.menuService.getStylesWithDinnerId(dinnerId) 
-                : await this.menuService.getAllStyles();
+        const styles = dinnerId
+                ? await this.menuService.getStylesBy({ dinnerId }, pageOptions) 
+                : await this.menuService.getAllStyles(pageOptions);
+        
+        if(!styles) throw new NotFoundException();
 
-        res.json(<ResBody>{
-            result: {
-                count: styles.length,
-                items: styles,
-            }
-        });
+        return styles;
     }
 
     @Get('styles/:styleId')
     async getStyle(
-        @Res() res: Response,
         @Param('styleId') styleId: number,
     ) {
         const style = await this.menuService.getStyleById(styleId);
 
-        if(!style) {
-            res.status(HttpStatus.NOT_FOUND).json(<ResBody>{
-                code: 0,
-                message: '해당 스타일이 존재하지 않습니다.',
-            });
-            return;
-        }
+        if(!style) throw new NotFoundException();
 
-        res.json(<ResBody>{
-            result: style,
-        });
-        return;
+        return style;
     }
 
-    @Get('styles/:styleId/options')
+    /* @Get('styles/:styleId/options')
     async getStyleOptions(
         @Res() res: Response,
         @Param('styleId') styleId: number,
@@ -130,5 +94,15 @@ export class MenuController {
             }
         });
         return;
+    } */
+
+    @Get('styles/:styleId/ingredients')
+    async getStyleIngredients(
+        @Param('styleId') styleId: number,
+        @Query() pageOptions: PageOptionsDto,
+    ) {
+        return await this.ingredientService.getIngredientsBy({ 
+            styleId 
+        }, pageOptions);
     }
 }
