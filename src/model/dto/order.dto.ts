@@ -31,13 +31,13 @@ export class UpdateOrderMetaDto extends PartialType(CreateOrderDto) { }
  */
 
  export class CreateOrderDinnerDto {
-    @IsNumber()
+    @IsNumber() @IsOptional()
     degreeId: number;
 
     @IsNumber()
     dinnerId: number;
 
-    @IsArray()
+    @IsArray() @IsOptional()
     dinnerOptionIds: number[];
 
     @IsNumber()

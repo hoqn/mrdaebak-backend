@@ -1,6 +1,7 @@
 import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Dinner } from "./Dinner";
 import { Ingredient } from "./Ingredient";
+import { StyleIngredient } from "./StyleIngredient";
 import { StyleOption } from "./StyleOption";
 
 @Entity("style")
@@ -20,14 +21,11 @@ export class Style {
   @ManyToMany(() => Dinner, (dinner) => dinner.styles)
   dinners: Dinner[];
 
-  @ManyToMany(() => Ingredient, (ingredient) => ingredient.styles)
-  @JoinTable({
-    name: "style_ingredient",
-    joinColumn: { name: "style_id", referencedColumnName: "styleId" },
-    inverseJoinColumn: { name: "ingredient_id", referencedColumnName: "ingredientId" },
-  })
-  ingredients: Ingredient[];
+  // Relations
 
-  @OneToMany(() => StyleOption, (styleOption) => styleOption.style)
+  @OneToMany(() => StyleIngredient, o => o.style)
+  styleIngredients: StyleIngredient[];
+
+  @OneToMany(() => StyleOption, o => o.style)
   styleOptions: StyleOption[];
 }

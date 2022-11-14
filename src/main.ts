@@ -3,6 +3,7 @@ require("dotenv").config();
 import { ValidationPipe } from '@nestjs/common';
 import { VersioningType } from '@nestjs/common/enums';
 import { NestFactory } from '@nestjs/core';
+import { IoAdapter } from '@nestjs/platform-socket.io';
 import { AppModule } from './app.module';
 
 async function bootstrap() {
@@ -22,6 +23,7 @@ async function bootstrap() {
       transform: true,
     })
   );
+  apiApp.useWebSocketAdapter(new IoAdapter(apiApp));
   await apiApp.listen(8080);
 }
 bootstrap();

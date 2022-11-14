@@ -43,7 +43,7 @@ export class CartController {
     ) {
         const cart = await this.orderService.getOrCreateCart(userId);
 
-        const result = await this.orderService.updateOrderMeta(cart.orderId, body);
+        const result = await this.orderService.updateOrder(cart.orderId, body);
 
         return result;
     }

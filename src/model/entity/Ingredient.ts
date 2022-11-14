@@ -2,11 +2,12 @@ import {
   Column,
   Entity, JoinColumn,
   ManyToMany,
-  ManyToOne, PrimaryGeneratedColumn
+  ManyToOne, OneToMany, PrimaryGeneratedColumn
 } from "typeorm";
 import { Dinner } from "./Dinner";
 import { IngredientCategory } from "./IngredientCategory";
 import { Style } from "./Style";
+import { StyleIngredient } from "./StyleIngredient";
 
 @Entity("ingredient")
 export class Ingredient {
@@ -36,17 +37,16 @@ export class Ingredient {
 
   @Column("int", { default: 0 })
   orderedNumber: number;
+
+  // Relations
   
-  @ManyToOne(
-    () => IngredientCategory,
-    (ingredientCategory) => ingredientCategory.ingredients,
-  )
-  @JoinColumn([{ name: "category_id", referencedColumnName: "categoryId" }])
+  @ManyToOne(() => IngredientCategory, o => o.ingredients )
+  @JoinColumn({ name: "category_id", referencedColumnName: "categoryId" })
   category: IngredientCategory;
 
   @ManyToMany(() => Dinner, (dinner) => dinner.ingredients)
   dinners: Dinner[];
 
-  @ManyToMany(() => Style, (style) => style.ingredients)
-  styles: Style[];
+  @OneToMany(() => StyleIngredient, o => o.ingredient)
+  styleIngredients: StyleIngredient[];
 }

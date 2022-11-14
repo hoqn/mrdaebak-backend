@@ -1,4 +1,5 @@
 import { PageOptionsDto } from "@/model/dto/common.dto";
+import { UpdateOrderDinnerDto } from "@/model/dto/order.dto";
 import { OrderState } from "@/model/enum";
 import { OrderService } from "@/service/order.service";
 import { BadRequestException, Body, Controller, Delete, ForbiddenException, Get, InternalServerErrorException, NotFoundException, Param, Post, Put, Query } from "@nestjs/common";
@@ -24,6 +25,17 @@ export class OrderController {
             }, pageOptions);
     }
 
+    @Get(':orderId')
+    async getOrder(
+        @Param('orderId') orderId: number,
+    ) {
+        const order = this.orderService.getOrderById(orderId, true);
+
+        if(!order) throw new NotFoundException();
+
+        return order;
+    }
+
     @Post()
     async postOrderFromCart(
         @Body('userId') userId: string
@@ -39,26 +51,27 @@ export class OrderController {
 
     @Get(':orderId/i/:orderDinnerId')
     async getOrderDinner(
-        @Param('orderId') orderId: number,
+        //@Param('orderId') orderId: number,
         @Param('orderDinnerId') orderDinnerId: number,
     ) {
-        return await this.orderService.getOrderDinner(orderId, orderDinnerId);
+        return await this.orderService.getOrderDinnerById(orderDinnerId);
     }
 
     @Put(':orderId/i/:orderDinnerId')
     async updateOrderDinner(
-        @Param('orderId') orderId: number,
+        //@Param('orderId') orderId: number,
         @Param('orderDinnerId') orderDinnerId: number,
+        @Body() body: UpdateOrderDinnerDto,
     ) {
-        
+        return await this.orderService.updateOrderDinner(orderDinnerId, body);
     }
 
     @Delete(':orderId/i/:orderDinnerId')
     async deleteOrderDinner(
-        @Param('orderId') orderId: number,
+        //@Param('orderId') orderId: number,
         @Param('orderDinnerId') orderDinnerId: number,
     ) {
-        return await this.orderService.removeOrderDinner(orderId, orderDinnerId);
+        return await this.orderService.deleteOrderDinner(orderDinnerId);
     }
 
     @Put(':orderId/state')

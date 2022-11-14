@@ -41,7 +41,7 @@ export class Order {
   @Column("int", { nullable: true })
   paymentPrice: number | null;
 
-  @Column("varchar", { length: 255 })
+  @Column("varchar", { length: 255, default: "" })
   request: string = '';
 
   @ManyToOne(() => User, (user) => user.orders)

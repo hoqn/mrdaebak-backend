@@ -5,18 +5,20 @@ import {
   JoinColumn,
   JoinTable,
   ManyToMany,
-  ManyToOne, PrimaryGeneratedColumn
+  ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn
 } from "typeorm";
 import { DinnerOption } from "./DinnerOption";
 import { Order } from "./Order";
+import { OrderDinnerOption } from "./OrderDinnerOption";
+import { SteakDonenessDegree } from "./SteakDonenessDegree";
 
 @Entity("order_dinner")
 export class OrderDinner {
   @PrimaryGeneratedColumn("increment")
   orderDinnerId: number;
 
-  @Column("int")
-  orderId: number;
+  @Column("int", { nullable: true })
+  orderId: number | null;
 
   @Column("int", { nullable: true })
   totalDinnerPrice: number | null;
@@ -34,6 +36,11 @@ export class OrderDinner {
   @JoinColumn([{ name: "order_id", referencedColumnName: "orderId" }])
   order: Order;
 
+  @ManyToOne(() => SteakDonenessDegree)
+  @JoinColumn({ name: "degree_id", referencedColumnName: "degreeId" })
+  degree: SteakDonenessDegree;
+
+  /*
   @ManyToMany(() => DinnerOption, (dinnerOption) => dinnerOption.orderDinners)
   @JoinTable({
     name: 'order_dinner_option',
@@ -41,4 +48,8 @@ export class OrderDinner {
     inverseJoinColumn: { name: 'dinner_option_id', referencedColumnName: 'dinnerOptionId' },
   })
   dinnerOptions: DinnerOption[];
+  */
+
+  @OneToMany(() => OrderDinnerOption, o => o.orderDinner)
+  dinnerOptions: OrderDinnerOption[];
 }
