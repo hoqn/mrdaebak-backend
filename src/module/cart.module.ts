@@ -1,18 +1,20 @@
 import { CartController } from "@/controller";
+import { StaffAlarmEventGateway } from "@/gateway/staff.gateway";
+import { IngredientService } from "@/service";
 import { OrderService } from "@/service/order.service";
 import { Module } from "@nestjs/common";
-import { AlarmModule } from "./alarm.module";
 import { MenuModule } from "./menu.module";
 import { OrderModule } from "./order.module";
+import { UserModule } from "./user.module";
 
 @Module({
     imports: [
+        UserModule,
         OrderModule,
         MenuModule,
-        AlarmModule,
     ],
     //exports: [TypeOrmModule],
     controllers: [CartController],
-    providers: [OrderService],
+    providers: [OrderService, IngredientService,StaffAlarmEventGateway],
 })
 export class CartModule { }

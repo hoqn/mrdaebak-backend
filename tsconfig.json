@@ -18,6 +18,8 @@
     "forceConsistentCasingInFileNames": false,
     "noFallthroughCasesInSwitch": false,
 
+    "allowJs": true,
+
     "paths": {
       "@/*": ["src/*"],
       "@controller/*": ["src/controller/*"],

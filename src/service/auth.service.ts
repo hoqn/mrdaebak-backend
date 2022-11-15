@@ -1,7 +1,7 @@
 import { NoIdException } from "@/exception";
 import { SecurityRole } from "@/security/role.enum";
 import { ClientType, SessionUser } from "@/security/sessionUser";
-import { Injectable, UnauthorizedException } from "@nestjs/common";
+import { Injectable, NotFoundException, UnauthorizedException } from "@nestjs/common";
 import { JwtService } from "@nestjs/jwt";
 import { StaffService } from "./staff.service";
 import { UserService } from "./user.service";
@@ -46,10 +46,10 @@ export class AuthService {
     }
 
     async loginUser(userId: string, password: string) {
-        return this.login(ClientType.USER, userId, password);
+        return await this.login(ClientType.USER, userId, password);
     }
     async loginStaff(staffId: string, password: string) {
-        return this.login(ClientType.STAFF, staffId, password);
+        return await this.login(ClientType.STAFF, staffId, password);
     }
 
     private async login(type: ClientType, id: string, password: string): Promise<string> {
@@ -75,6 +75,6 @@ export class AuthService {
             });
         }
 
-        throw UnauthorizedException;
+        throw new UnauthorizedException();
     }
 }

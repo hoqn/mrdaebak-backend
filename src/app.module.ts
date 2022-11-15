@@ -1,14 +1,33 @@
 import { Module } from '@nestjs/common';
-import { TypeOrmModule } from '@nestjs/typeorm';
+import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 
-import { AlarmModule, AuthModule, CartModule, MenuModule, OrderModule, UserModule } from '@/module';
+import { AuthModule, CartModule, MenuModule, OrderModule, UserModule } from '@/module';
 
-import typeormConfig from '@/config/typeorm.config';
+import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
+import { CONFIG } from './config';
+import { Dinner, DinnerIngredient, DinnerOption, Ingredient, IngredientCategory, Order, OrderDinner, Staff, SteakDonenessDegree, Style, StyleIngredient, StyleOption, User } from './model/entity';
+import { OrderDinnerOption } from './model/entity/OrderDinnerOption';
 import { IngredientModule } from './module/ingredient.module';
-import { createConnection } from 'typeorm';
-import { StaffAlarmEventGateway } from './gateway/staff.gateway';
 
-const typeOrmModule = TypeOrmModule.forRoot(typeormConfig);
+const typeOrmConfig = <TypeOrmModuleOptions>{
+  ...CONFIG.db,
+  entities: [
+    //join(__dirname, '{src,dist}/model/entity/**/*.{js,ts}'),
+    Dinner, DinnerOption, DinnerIngredient,
+    Style, StyleOption, StyleIngredient,
+    Ingredient, IngredientCategory,
+    Order, OrderDinner, OrderDinnerOption,
+    Staff, User,
+    SteakDonenessDegree, //DinnerStyle,
+  ],
+  synchronize: false,
+  /* TODO: false로 바꿀 것! */
+  namingStrategy: new SnakeNamingStrategy(),
+  timezone: 'local',
+  logging: ['error'],
+};
+
+const typeOrmModule = TypeOrmModule.forRoot(typeOrmConfig);
 
 /*
 async function migration(typeormConfig: any) {
@@ -25,7 +44,6 @@ migration(typeormConfig);
 @Module({
   imports: [
     typeOrmModule,
-    AlarmModule,
     AuthModule,
     MenuModule,
     UserModule,

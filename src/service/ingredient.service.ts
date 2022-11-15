@@ -10,7 +10,7 @@ export class IngredientService {
     constructor(
         @InjectRepository(Ingredient) private readonly ingredientRepo: Repository<Ingredient>,
         @InjectRepository(IngredientCategory) private readonly ingCategoryRepo: Repository<IngredientCategory>,
-    ) {}
+    ) { }
 
     async getAllIngredients(
         pageOptions: PageOptionsDto,
@@ -22,34 +22,41 @@ export class IngredientService {
         query: {
             ingredientName?: string,
             dinnerId?: number,
-            styleId?: number,  
+            styleId?: number,
         },
-        pageOptions: PageOptionsDto,
+        pageOptions?: PageOptionsDto,
     ): PageResultPromise<Ingredient> {
         const qb = this.ingredientRepo.createQueryBuilder('i');
 
-        if(query.dinnerId !== undefined) {
+        if (query.dinnerId !== undefined) {
             qb
                 .innerJoin('dinner_ingredient', 'di', 'i.ingredient_id=di.ingredient_id')
                 .innerJoin('dinner', 'd', 'di.dinner_id=d.dinner_id')
                 .where('di.dinner_id=:dinnerId', { dinnerId: query.dinnerId });
         }
 
-        if(query.styleId !== undefined) {
+        if (query.styleId !== undefined) {
             qb
                 .innerJoin('style_ingredient', 'si', 'i.ingredient_id=si.ingredient_id')
                 .innerJoin('style', 's', 'si.style_id=s.style_id')
                 .where('si.style_id=:styleId', { styleId: query.styleId });
         }
-        
-        if(query.ingredientName !== undefined) qb.andWhere({ ingredientName: query.ingredientName });
 
-        if(pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection)
-        qb.skip(pageOptions.skip).take(pageOptions.take);
+        if (query.ingredientName !== undefined) qb.andWhere({ ingredientName: query.ingredientName });
 
-        const [items, count] = await qb.getManyAndCount();
+        if (pageOptions === undefined) {
+            if (pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection)
+            qb.skip(pageOptions.skip).take(pageOptions.take);
 
-        return new PageResultDto(pageOptions, count, items);
+            const [items, count] = await qb.getManyAndCount();
+
+            return new PageResultDto(pageOptions, count, items);
+        } else {
+            return <PageResultDto<Ingredient>>{
+                items: await qb.getMany(),
+            };
+        }
+
     }
 
     async getIngredientById(ingredientId: number) {
@@ -70,7 +77,7 @@ export class IngredientService {
 
 
 
-    async getAllIngredientCategories(        
+    async getAllIngredientCategories(
         pageOptions: PageOptionsDto
     ) {
         return this.getIngredientCategoriesBy({}, pageOptions);
@@ -84,13 +91,31 @@ export class IngredientService {
     ) {
         const qb = this.ingCategoryRepo.createQueryBuilder('c');
 
-        if(query.categoryName !== undefined) qb.andWhere({ categoryName: query.categoryName });
+        if (query.categoryName !== undefined) qb.andWhere({ categoryName: query.categoryName });
 
-        if(pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection);
+        if (pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection);
         qb.skip(pageOptions.skip).take(pageOptions.take);
 
         const [items, count] = await qb.getManyAndCount();
 
         return new PageResultDto(pageOptions, count, items);
+    }
+
+    async decreaseStock(ingredientId: number, diff: number) {
+        const qb = this.ingredientRepo.createQueryBuilder('i')
+            .update().where({ ingredientId });
+
+        qb.set({ currentStock: () => `current_stock - ${diff}` });
+
+        return qb.execute();
+    }
+
+    async increaseStock(ingredientId: number, diff: number) {
+        const qb = this.ingredientRepo.createQueryBuilder('i')
+            .update().where({ ingredientId });
+
+        qb.set({ currentStock: () => `current_stock + ${diff}` });
+
+        return qb.execute();
     }
 }

@@ -20,21 +20,39 @@ export class Ingredient {
   @Column("varchar", { length: 50 })
   ingredientName: string;
 
+  /**
+   * 발주 시 가격
+   */
   @Column("int")
   ingredientPrice: number;
 
+  /**
+   * 전일 재고: 어제까지의 양
+   */
   @Column("int", { default: 0 })
   prevStock: number;
 
+  /**
+   * 당일 입고: 오늘 배송오기로 한 양
+   */
   @Column("int", { default: 0 })
   todayArrived: number;
 
+  /**
+   * 당일 출고: 오늘 현재까지 나간 양
+   */
   @Column("int", { default: 0 })
   todayOut: number;
 
-  @Column("int", { default: 0 })
+  /**
+   * 현재 재고: 현재의 양
+   */
+  @Column("int", { default: 0 }) //
   currentStock: number;
 
+  /**
+   * 발주 수량: 발주되어 배송을 기다리는 양
+   */
   @Column("int", { default: 0 })
   orderedNumber: number;
 

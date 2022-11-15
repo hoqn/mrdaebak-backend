@@ -1,20 +1,19 @@
 import { OrderController } from "@/controller";
 import { StaffAlarmEventGateway } from "@/gateway/staff.gateway";
-import { DinnerOption, Order, OrderDinner } from "@/model/entity";
-import { OrderService } from "@/service/order.service";
+import { DinnerOption, Ingredient, IngredientCategory, Order, OrderDinner } from "@/model/entity";
+import { IngredientService, OrderService } from "@/service";
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
-import { AlarmModule } from "./alarm.module";
-import { MenuModule } from "./menu.module";
+import { MenuModule, UserModule } from ".";
 
 @Module({
     imports: [
         MenuModule,
-        TypeOrmModule.forFeature([Order, OrderDinner, DinnerOption]),
-        AlarmModule,
+        UserModule,
+        TypeOrmModule.forFeature([Order, OrderDinner, DinnerOption, Ingredient, IngredientCategory]),
     ],
     exports: [TypeOrmModule, OrderService],
     controllers: [OrderController],
-    providers: [OrderService],
+    providers: [OrderService, IngredientService, StaffAlarmEventGateway],
 })
 export class OrderModule { }

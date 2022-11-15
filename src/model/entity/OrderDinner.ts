@@ -40,6 +40,8 @@ export class OrderDinner {
   @JoinColumn({ name: "degree_id", referencedColumnName: "degreeId" })
   degree: SteakDonenessDegree;
 
+  // Relations
+
   /*
   @ManyToMany(() => DinnerOption, (dinnerOption) => dinnerOption.orderDinners)
   @JoinTable({
@@ -51,5 +53,5 @@ export class OrderDinner {
   */
 
   @OneToMany(() => OrderDinnerOption, o => o.orderDinner)
-  dinnerOptions: OrderDinnerOption[];
+  orderDinnerOptions: OrderDinnerOption[];
 }

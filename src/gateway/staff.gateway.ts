@@ -1,3 +1,4 @@
+import { CONFIG } from "@/config";
 import { Order } from "@/model/entity";
 import { MessageBody, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
 import { Server, Socket } from "socket.io";
@@ -6,7 +7,7 @@ enum StaffEvents {
     NEW_ORDER = 'NEW_ORDER',
 }
 
-@WebSocketGateway(1111, { transports: ['websocket'], namespace: 'staff' })
+@WebSocketGateway(CONFIG.socketPort, { transports: ['websocket'], namespace: 'staff' })
 export class StaffAlarmEventGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     @WebSocketServer()

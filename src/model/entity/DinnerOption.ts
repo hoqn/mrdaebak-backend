@@ -6,10 +6,12 @@ import {
   JoinTable,
   ManyToMany,
   ManyToOne,
+  OneToMany,
   PrimaryGeneratedColumn
 } from "typeorm";
 import { Dinner } from "./Dinner";
 import { OrderDinner } from "./OrderDinner";
+import { OrderDinnerOption } from "./OrderDinnerOption";
 
 @Entity("dinner_option")
 export class DinnerOption {
@@ -28,10 +30,12 @@ export class DinnerOption {
   @Column("int")
   dinnerOptionPrice: number;
 
+  // Relations
+
   @ManyToOne(() => Dinner, (dinner) => dinner.dinnerOptions)
   @JoinColumn([{ name: "dinner_id", referencedColumnName: "dinnerId" }])
   dinner: Dinner;
 
-  @ManyToMany(() => OrderDinner, (orderDinner) => orderDinner.dinnerOptions)
-  orderDinners: OrderDinner[];
+  @OneToMany(() => OrderDinnerOption, (o) => o.dinnerOption)
+  orderDinnerOptions: OrderDinnerOption[];
 }

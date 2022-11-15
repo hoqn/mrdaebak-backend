@@ -31,19 +31,21 @@ export class PageOptionsDto {
 }
 
 export class PageResultDto<T> {
-    readonly page: number;
-    readonly pageMax: number;
-    readonly count: number;
-    readonly countMax: number;
+    readonly page?: number;
+    readonly pageMax?: number;
+    readonly count?: number;
+    readonly countMax?: number;
 
     @IsArray()
     readonly items: T[];
 
-    constructor(options: PageOptionsDto, countMax: number, items: T[]) {
-        this.page = options.page;
-        this.pageMax = Math.ceil(countMax / options.take);
-        this.count = items.length;
-        this.countMax = countMax;
+    constructor(options: PageOptionsDto|undefined, countMax: number, items: T[]) {
+        if(options !== undefined) {
+            this.page = options.page;
+            this.pageMax = Math.ceil(countMax / options.take);
+            this.count = items.length;
+            this.countMax = countMax;
+        }
         this.items = items;
     }
 }

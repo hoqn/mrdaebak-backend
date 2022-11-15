@@ -13,7 +13,9 @@ export class OrderDinnerOption {
     @Column("int")
     amount: number;
 
-    @ManyToOne(() => OrderDinner, o => o.dinnerOptions)
+    // Relations
+
+    @ManyToOne(() => OrderDinner, o => o.orderDinnerOptions)
     @JoinColumn({ name: "order_dinner_id", referencedColumnName: "orderDinnerId" })
     orderDinner: OrderDinner;
 

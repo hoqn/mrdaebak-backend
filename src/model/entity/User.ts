@@ -30,7 +30,7 @@ export class User  extends Client{
   cardNumber: string | null;
 
   @Column("int", { default: 0 })
-  orderNumber: number;
+  orderCount: number;
 
   @CreateDateColumn({type: "timestamp"})
   joinDate: Date;

@@ -3,6 +3,7 @@ import { PageOptionsDto, PageResultDto, PageResultPromise } from "@/model/dto/co
 import { CreateStaffReq, UpdateStaffReq } from "@/model/dto/staff.dto";
 import { Staff } from "@/model/entity";
 import { StaffRole } from "@/model/enum";
+import { BadRequestException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { DeleteResult, ILike, Not, Repository, UpdateResult } from "typeorm";
 import PasswordEncryptor from "./utils/passwordEncryptor";
@@ -52,6 +53,23 @@ export class StaffService {
 
     async getMember(staffId: string): Promise<Staff> {
         return await this.staffRepo.findOneBy({ staffId });
+    }
+
+    async approveMember(staffId: string) {
+        const currentRole: StaffRole = await this.staffRepo.createQueryBuilder()
+            .select('role')
+            .where({ staffId })
+            .execute().then(o => o[0].role);
+        
+        if(currentRole >= StaffRole.PENDING_COOK && currentRole < StaffRole.COOK) {
+            return this.staffRepo.createQueryBuilder()
+                .update()
+                .where({ staffId })
+                .set({ role: () => `role + ${0x10}` })
+                .execute();
+        }
+
+        throw new BadRequestException(`해당 직원은 승인할 수 없거나 이미 승인된 상태입니다. (${currentRole})`);
     }
 
     async updateMember(staffId: string, body: UpdateStaffReq): Promise<UpdateResult> {

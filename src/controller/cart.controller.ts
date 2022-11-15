@@ -19,13 +19,16 @@ export class CartController {
     async getCart(
         @Param('userId') userId: string,
     ) {
-        const cart= await this.orderService.getOrCreateCart(userId)
+        const cart = await this.orderService.getOrCreateCart(userId)
 
-        if(!cart) throw new NotFoundException();
+        if (!cart) throw new NotFoundException();
 
         return cart;
     }
 
+    @UseGuards(BaseAuthGuard, ExclusiveOrRoleGuard)
+    @SetMetadata('param', 'userId')
+    @SecurityRoles()
     @Post(':userId/cart')
     async addToCart(
         @Param('userId') userId: string,
@@ -36,6 +39,9 @@ export class CartController {
         return await this.orderService.addOrderDinner(cart.orderId, body);
     }
 
+    @UseGuards(BaseAuthGuard, ExclusiveOrRoleGuard)
+    @SetMetadata('param', 'userId')
+    @SecurityRoles()
     @Patch(':userId/cart')
     async updateCartMeta(
         @Param('userId') userId: string,

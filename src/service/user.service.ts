@@ -6,6 +6,7 @@ import { UserGrade } from "@/model/enum/userGrade.enum";
 import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 
 import { InjectRepository } from "@nestjs/typeorm";
+import { IsPositive } from "class-validator";
 import { ILike, Repository } from "typeorm";
 import PasswordEncryptor from "./utils/passwordEncryptor";
 
@@ -86,5 +87,18 @@ export class UserService {
             .delete()
             .where({ userId })
             .execute();
+    }
+
+    async incrementOrderCount(userId: string, quantity: number) {
+        // 고민... 일단은 OrderCount를 수동으로 조절하는 방식으로 구현했는데,
+        // Update할 때마다 Order에서 해당 UserId의 개수를 조회해서 적용할지...
+        return await this.userRepo.createQueryBuilder('u')
+            .update().where({ userId })
+            .set({ orderCount: () => `order_count + ${quantity}` });
+    }
+    async decrementOrderCount(userId: string, quantity: number) {
+        return await this.userRepo.createQueryBuilder('u')
+            .update().where({ userId })
+            .set({ orderCount: () => `order_count - ${quantity}` });
     }
 }

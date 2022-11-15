@@ -2,12 +2,15 @@ import { StaffAlarmEventGateway } from "@/gateway/staff.gateway";
 import { PageOptionsDto, PageResultDto, PageResultPromise } from "@/model/dto/common.dto";
 import { CreateOrderDinnerDto, UpdateOrderDinnerDto, UpdateOrderMetaDto } from "@/model/dto/order.dto";
 import { DinnerOption, Order, OrderDinner, User } from "@/model/entity";
+import { OrderDinnerOption } from "@/model/entity/OrderDinnerOption";
 import { OrderState, UserGrade } from "@/model/enum";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectDataSource, InjectRepository } from "@nestjs/typeorm";
 import { isDate, isNumberString, isPhoneNumber, isString } from "class-validator";
 import { DataSource, DeleteResult, FindOptionsOrder, Not, QueryBuilder, Repository, UpdateQueryBuilder, UpdateResult } from "typeorm";
+import { IngredientService } from "./ingredient.service";
 import { MenuService } from "./menu.service";
+import { UserService } from "./user.service";
 
 const DISCOUNT_VIP = 10000;
 
@@ -15,6 +18,8 @@ const DISCOUNT_VIP = 10000;
 export class OrderService {
     constructor(
         private readonly menuService: MenuService,
+        private readonly userService: UserService,
+        private readonly ingredientService: IngredientService,
         @InjectRepository(Order) private readonly orderRepo: Repository<Order>,
         @InjectRepository(OrderDinner) private readonly orderDinnerRepo: Repository<OrderDinner>,
         @InjectRepository(DinnerOption) private readonly dinnerOptionRepo: Repository<DinnerOption>,
@@ -32,7 +37,7 @@ export class OrderService {
 
     public async getOrdersBy(
         query: { userId?: string, orderState?: OrderState },
-        pageOptions: PageOptionsDto
+        pageOptions?: PageOptionsDto
     ): PageResultPromise<Order> {
         const qb = this.orderRepo.createQueryBuilder()
             .select();
@@ -42,8 +47,10 @@ export class OrderService {
         if (query.userId) qb.andWhere({ userId: query.userId });
         if (query.orderState) qb.andWhere({ orderState: query.orderState });
 
-        if (pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection);
-        qb.skip(pageOptions.skip).take(pageOptions.take);
+        if(pageOptions) {
+            if (pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection);
+            qb.skip(pageOptions.skip).take(pageOptions.take);
+        }
 
         const [items, count] = await qb.getManyAndCount();
 
@@ -53,16 +60,14 @@ export class OrderService {
     }
 
     public async getOrderById(orderId: number, widen: boolean = false) {
-        const qb = this.orderRepo.createQueryBuilder('o')
-            .where({ orderId, orderState: Not(OrderState.CART) });
-
-        if(widen) {
-            qb.leftJoin('o.orderDinners', 'order_dinner');
-            //옵션도 봐야함
-            
-        }
-
-        return qb.getOne();
+        return this.orderRepo.findOne({
+            relations: {
+                orderDinners: widen ? {
+                    orderDinnerOptions: true
+                } : false,
+            },
+            where: { orderId, orderState: Not(OrderState.CART) },
+        });
     }
 
     public async updateOrder(orderId: number, body: UpdateOrderMetaDto) {
@@ -123,7 +128,7 @@ export class OrderService {
      * CART -> ORDER
      */
 
-    public async newOrderFromCart(userId: string) {
+    public async newOrderFromCart(userId: string): Promise<number> {
         const cart = await this.getCart(userId);
 
         if (!cart) throw new Error('0');
@@ -135,7 +140,7 @@ export class OrderService {
 
         // 단골 고객 할인 적용
         const discount = userGrade === UserGrade.VIP ? DISCOUNT_VIP : 0;
-        
+
         const qb = (await this.makeUpdatePriceOfOrder(cart, discount))
             .where({ orderId: cart.orderId });
 
@@ -144,6 +149,30 @@ export class OrderService {
             orderState: OrderState.WAITING,
         }).execute();
 
+        // 재료 차감
+        /*for(let orderDinner of cart.orderDinners) {
+            const dinnerIngredients = (await this.ingredientService.getIngredientsBy({ dinnerId: orderDinner.dinnerId })).items;
+            const styleIngredients = (await this.ingredientService.getIngredientsBy({ styleId: orderDinner.styleId })).items;
+            const optionIngredients = (await this.ingredientService.getIngredientById({  })) 
+            for(let ingredient of dinnerIngredients) {
+                this.ingredientService.decreaseStock(ingredient.ingredientId, )
+            }
+
+            const usedIng = {};
+            
+            for(let ingredient of dinnerIngredients) {
+                if(usedIng[ingredient.ingredientId] === undefined)
+                    usedIng[ingredient.ingredientId] = 0;
+                usedIng[ingredient.ingredientId] += ingredient.
+            }
+        }*/
+
+        // 주문 횟수 증가 (비동기로)
+        // (단골 할인보다 후순위로 -> '이번 주문'으로 단골 여부가 달라질 수 있기 때문)
+        this.userService.incrementOrderCount(cart.userId, 1);
+
+
+        // 실시간 알림 -> 직원
         (async () => {
             if (result && result.affected > 0) {
                 // 실시간 알림 보냄
@@ -152,7 +181,7 @@ export class OrderService {
             }
         })();
 
-        return result;
+        return cart.orderId;
     }
 
     /**
@@ -169,7 +198,7 @@ export class OrderService {
     private async getCart(userId: string): Promise<Order> {
         const order = await this.orderRepo.findOne({
             relations: {
-                orderDinners: { dinnerOptions: true }
+                orderDinners: { orderDinnerOptions: true }
             },
             where: {
                 userId,
@@ -259,15 +288,16 @@ export class OrderService {
         const style = await this.menuService.getStyleById(orderDinner.styleId);
         price += style.stylePrice;
 
-        orderDinner.dinnerOptions.forEach(option => {
+        orderDinner.orderDinnerOptions.forEach(option => {
             price += option.dinnerOption.dinnerOptionPrice;
         });
 
         return price;
     }
 
-
-
+    private async makeUpdateIngQuantity(orderDinner: OrderDinner) {
+        
+    }
 
 
 

@@ -68,4 +68,12 @@ export class StaffController {
 
         return result;
     }
+
+    // OWNER만
+    @Post(':staffId/approve')
+    async approveMember(
+        @Param('staffId') staffId: string,
+    ) {
+        return this.staffService.approveMember(staffId);
+    }
 }
