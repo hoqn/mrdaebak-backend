@@ -9,6 +9,8 @@ import { isDate, isNumberString, isPhoneNumber, isString } from "class-validator
 import { DataSource, DeleteResult, FindOptionsOrder, Not, QueryBuilder, Repository, UpdateQueryBuilder, UpdateResult } from "typeorm";
 import { MenuService } from "./menu.service";
 
+const DISCOUNT_VIP = 10000;
+
 @Injectable()
 export class OrderService {
     constructor(
@@ -55,7 +57,9 @@ export class OrderService {
             .where({ orderId, orderState: Not(OrderState.CART) });
 
         if(widen) {
-            qb.leftJoinAndSelect('o.orderDinners', 'order_dinner');
+            qb.leftJoin('o.orderDinners', 'order_dinner');
+            //옵션도 봐야함
+            
         }
 
         return qb.getOne();
@@ -129,8 +133,9 @@ export class OrderService {
             = await this.dataSource.getRepository(User).createQueryBuilder('u')
                 .select(['grade']).execute();
 
-        const discount = userGrade === UserGrade.VIP ? 10000 : 0;
-
+        // 단골 고객 할인 적용
+        const discount = userGrade === UserGrade.VIP ? DISCOUNT_VIP : 0;
+        
         const qb = (await this.makeUpdatePriceOfOrder(cart, discount))
             .where({ orderId: cart.orderId });
 

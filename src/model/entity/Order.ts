@@ -44,6 +44,8 @@ export class Order {
   @Column("varchar", { length: 255, default: "" })
   request: string = '';
 
+  // Relations
+
   @ManyToOne(() => User, (user) => user.orders)
   @JoinColumn([{ name: "user_id", referencedColumnName: "userId" }])
   user: User;

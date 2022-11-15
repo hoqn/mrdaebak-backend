@@ -11,8 +11,10 @@ yarn-debug.log*
 yarn-error.log*
 lerna-debug.log*
 
-# Yarn
+# Custom
 yarn.lock
+config.ts
+.env
 
 # OS
 .DS_Store

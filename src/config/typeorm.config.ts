@@ -15,7 +15,7 @@ export default <TypeOrmModuleOptions>{
         Staff, User,
         SteakDonenessDegree, //DinnerStyle,
     ],
-    synchronize: true,
+    synchronize: false,
     /* TODO: false로 바꿀 것! */
     namingStrategy: new SnakeNamingStrategy(),
     timezone: 'local',
