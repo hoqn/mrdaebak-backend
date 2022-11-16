@@ -1,11 +1,6 @@
 import { TypeOrmModuleOptions } from "@nestjs/typeorm";
 import { DataSourceOptions } from "typeorm";
 
-export interface ServerConfig {
-    host: string,
-    port: number,
-}
-
 export interface StaffConfig {
     alarm: StaffAlarmConfig,
 }
@@ -26,19 +21,31 @@ export interface UserAlarmConfig {
     changeOrderState?: boolean,
 }
 
+export interface IngredientsConfig {
+    deliveredDate: {
+        byDayOfWeek?: { 
+            sun?: boolean,
+            mon?: boolean,
+            tue?: boolean,
+            wed?: boolean,
+            thu?: boolean,
+            fri?: boolean,
+            sat?: boolean,
+         },
+    },
+}
+
 export interface Config {
-    server: ServerConfig,
+    serverPort: number,
     socketPort: number,
     db: DataSourceOptions,
     staff: StaffConfig,
     user: UserConfig,
+    ingredients: IngredientsConfig,
 }
 
 const defaultConfig: Config = {
-    server: {
-        host: 'localhost',
-        port: 8080,
-    },
+    serverPort: 8080,
     socketPort: 1111,
     db: {
         type: 'mariadb',
@@ -60,6 +67,15 @@ const defaultConfig: Config = {
         orderCountForVip: 5,
         alarm: {
             changeOrderState: true,
+        }
+    },
+    ingredients: {
+        deliveredDate: {
+            byDayOfWeek: {
+                mon: true,
+                wed: true,
+                fri: true,
+            }
         }
     }
 };

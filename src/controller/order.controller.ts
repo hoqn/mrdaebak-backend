@@ -40,15 +40,17 @@ export class OrderController {
     async postOrderFromCart(
         @Body('userId') userId: string
     ) {
-        const orderId = await this.orderService.newOrderFromCart(userId)
+        const { orderId } = await this.orderService.newOrderFromCart(userId)
             .catch((e: Error) => {
                 if(e.message === '0') throw new NotFoundException();
                 else if(e.message === '1') throw new BadRequestException('주문하려면 더 많은 정보가 필요합니다.');
-                
-                throw new InternalServerErrorException();
+                else throw e;
             });
         
-        return this.orderService.getOrderById(orderId, false);
+        return {
+            ...await this.orderService.getOrderById(orderId, false),
+            becomeVip: false,
+        };
     }
 
     @Get(':orderId/i/:orderDinnerId')

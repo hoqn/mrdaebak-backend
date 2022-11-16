@@ -128,7 +128,7 @@ export class OrderService {
      * CART -> ORDER
      */
 
-    public async newOrderFromCart(userId: string): Promise<number> {
+    public async newOrderFromCart(userId: string) {
         const cart = await this.getCart(userId);
 
         if (!cart) throw new Error('0');
@@ -169,8 +169,7 @@ export class OrderService {
 
         // 주문 횟수 증가 (비동기로)
         // (단골 할인보다 후순위로 -> '이번 주문'으로 단골 여부가 달라질 수 있기 때문)
-        this.userService.incrementOrderCount(cart.userId, 1);
-
+        const becomeVip = (await this.userService.incrementOrderCount(cart.userId, 1)).becomeVip;
 
         // 실시간 알림 -> 직원
         (async () => {
@@ -181,7 +180,7 @@ export class OrderService {
             }
         })();
 
-        return cart.orderId;
+        return { orderId: cart.orderId, becomeVip: becomeVip };
     }
 
     /**

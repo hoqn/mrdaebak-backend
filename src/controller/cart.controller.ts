@@ -6,7 +6,7 @@ import { OrderService } from "@/service/order.service";
 import { BadRequestException, Body, Controller, Get, HttpException, HttpStatus, InternalServerErrorException, NotFoundException, Param, Patch, Post, Res, SetMetadata, UseGuards } from "@nestjs/common";
 import { Response } from "express";
 
-@Controller('users')
+@Controller('cart')
 export class CartController {
     constructor(
         private readonly orderService: OrderService,
@@ -15,7 +15,7 @@ export class CartController {
     @UseGuards(BaseAuthGuard, ExclusiveOrRoleGuard)
     @SetMetadata('param', 'userId')
     @SecurityRoles()
-    @Get(':userId/cart')
+    @Get(':userId')
     async getCart(
         @Param('userId') userId: string,
     ) {
@@ -29,7 +29,7 @@ export class CartController {
     @UseGuards(BaseAuthGuard, ExclusiveOrRoleGuard)
     @SetMetadata('param', 'userId')
     @SecurityRoles()
-    @Post(':userId/cart')
+    @Post(':userId')
     async addToCart(
         @Param('userId') userId: string,
         @Body() body: CreateOrderDinnerDto,
@@ -42,7 +42,7 @@ export class CartController {
     @UseGuards(BaseAuthGuard, ExclusiveOrRoleGuard)
     @SetMetadata('param', 'userId')
     @SecurityRoles()
-    @Patch(':userId/cart')
+    @Patch(':userId')
     async updateCartMeta(
         @Param('userId') userId: string,
         @Body() body: UpdateOrderMetaDto,

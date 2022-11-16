@@ -26,13 +26,11 @@ async function bootstrap() {
   );
   apiApp.useWebSocketAdapter(new IoAdapter(apiApp));
 
-  const host = process.env.SERVER_HOST ?? CONFIG.server.host ?? 'localhost';
-  const port = process.env.SERVER_PORT ?? CONFIG.server.port ?? '3000';
+  const port = process.env.SERVER_PORT ?? CONFIG.serverPort ?? '3000';
   
-  await apiApp.listen(CONFIG.server.port)//, CONFIG.server.host)
+  await apiApp.listen(CONFIG.serverPort)
     .then(() => {
-      console.info(`\n\n[*]  🎅  Mr.Daebak Backend 서버가 http://${host}:${port}에 시작됩니다.\n\n`);
+      console.info(`\n\n[*]  🎅  Mr.Daebak Backend 서버가 ${port}번 포트에서 시작됩니다.\n\n`);
     });
-
 }
 bootstrap();

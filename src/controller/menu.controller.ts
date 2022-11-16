@@ -22,11 +22,10 @@ export class MenuController {
     async getDinner(
         @Param('dinnerId') dinnerId: number,
     ) {
-        const dinner = await this.menuService.getDinnerById(dinnerId);
+        const dinner = await this.menuService.getDinnerById(dinnerId, false);
 
         if(!dinner) throw new NotFoundException();
-
-        return dinner;
+        return dinner
     }
 
     @Get('dinners/:dinnerId/options')

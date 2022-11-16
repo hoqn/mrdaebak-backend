@@ -27,7 +27,16 @@ export class MenuService {
         return new PageResultDto(pageOptions, count, items);
     }
 
-    async getDinnerById(dinnerId: number) {
+    async getDinnerById(dinnerId: number, widen: boolean = false) {
+        if(widen)
+            return await this.dinnerRepo.findOne({
+                relations: {
+                    dinnerOptions: true
+                },
+                where: {
+                    dinnerId
+                }
+            });
         return await this.dinnerRepo.findOneBy({ dinnerId });
     }
 

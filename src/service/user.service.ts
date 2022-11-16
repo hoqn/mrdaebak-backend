@@ -1,3 +1,4 @@
+import { CONFIG } from "@/config";
 import { IdDuplicatedException } from "@/exception";
 import { PageOptionsDto, PageResultDto, PageResultPromise } from "@/model/dto/common.dto";
 import { CreateUserDto, PatchUserDto } from "@/model/dto/user.dto";
@@ -7,7 +8,7 @@ import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 
 import { InjectRepository } from "@nestjs/typeorm";
 import { IsPositive } from "class-validator";
-import { ILike, Repository } from "typeorm";
+import { ILike, Not, Repository } from "typeorm";
 import PasswordEncryptor from "./utils/passwordEncryptor";
 
 /**
@@ -89,12 +90,34 @@ export class UserService {
             .execute();
     }
 
+    private readonly ORDER_COUNT_FOR_VIP = CONFIG.user.orderCountForVip;
+
     async incrementOrderCount(userId: string, quantity: number) {
         // 고민... 일단은 OrderCount를 수동으로 조절하는 방식으로 구현했는데,
         // Update할 때마다 Order에서 해당 UserId의 개수를 조회해서 적용할지...
-        return await this.userRepo.createQueryBuilder('u')
+        await this.userRepo.createQueryBuilder('u')
             .update().where({ userId })
-            .set({ orderCount: () => `order_count + ${quantity}` });
+            .set({ orderCount: () => `order_count + ${quantity}` })
+            .execute();
+
+        // VIP 승급 여부를 백엔드에서 하는 게 나은가? DBMS에서 처리하는 게 나은가...?
+
+        // VIP 승급 여부 확인
+        const updatedOrderCount = await this.userRepo.createQueryBuilder()
+            .select('order_count')
+            .where({ userId })
+            .execute()
+            .then(r => r.orderCount);
+        
+        if(updatedOrderCount >= this.ORDER_COUNT_FOR_VIP) {
+            await this.userRepo.createQueryBuilder()
+                .update()
+                .set({ grade: UserGrade.VIP })
+                .where({ userId, grade: Not(UserGrade.VIP) })
+                .execute();
+            
+            return { becomeVip: true };
+        }
     }
     async decrementOrderCount(userId: string, quantity: number) {
         return await this.userRepo.createQueryBuilder('u')
