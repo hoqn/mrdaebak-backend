@@ -11,9 +11,13 @@ export class DinnerIngredient {
     ingredientId: number;
 
     @Column("int", { default: 1 })
-    ingredientNumber: number;
+    amount: number;
 
     @ManyToOne(() => Dinner)
     @JoinColumn({ name: "dinner_id", referencedColumnName: "dinnerId" })
     dinner: Dinner;
+    
+    @ManyToOne(() => Ingredient, o => o.styleIngredients)
+    @JoinColumn({ name: "ingredient_id", referencedColumnName: "ingredientId" })
+    ingredient: Ingredient;
 }

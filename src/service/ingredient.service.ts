@@ -1,13 +1,14 @@
 import { PageOptionsDto, PageResultDto, PageResultPromise } from "@/model/dto/common.dto";
 import { CreateIngredientReq, UpdateIngredientReq } from "@/model/dto/ingredient.dto";
-import { DinnerIngredient, Ingredient, IngredientCategory } from "@/model/entity";
+import { DinnerIngredient, DinnerOption, Ingredient, IngredientCategory, StyleIngredient } from "@/model/entity";
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { Repository } from "typeorm";
+import { DataSource, EntityTarget, ObjectType, Repository } from "typeorm";
 
 @Injectable()
 export class IngredientService {
     constructor(
+        private readonly dataSource: DataSource,
         @InjectRepository(Ingredient) private readonly ingredientRepo: Repository<Ingredient>,
         @InjectRepository(IngredientCategory) private readonly ingCategoryRepo: Repository<IngredientCategory>,
     ) { }
@@ -101,21 +102,45 @@ export class IngredientService {
         return new PageResultDto(pageOptions, count, items);
     }
 
-    async decreaseStock(ingredientId: number, diff: number) {
-        const qb = this.ingredientRepo.createQueryBuilder('i')
-            .update().where({ ingredientId });
-
-        qb.set({ currentStock: () => `current_stock - ${diff}` });
-
-        return qb.execute();
+    async decreaseStockFromDinner(dinnerId: number) {
+        const ings = await this.dataSource.getRepository(DinnerIngredient)
+            .createQueryBuilder('di')
+            .where({ dinnerId })
+            .getMany();
+        
+        for(let di of ings) {
+            await this.ingredientRepo.update(
+                { ingredientId: di.ingredientId }, 
+                { currentStock: () => `current_stock - ${di.amount}` }
+            );
+        }
     }
 
-    async increaseStock(ingredientId: number, diff: number) {
-        const qb = this.ingredientRepo.createQueryBuilder('i')
-            .update().where({ ingredientId });
+    async decreaseStockFromStyle(styleId: number) {
+        const ings = await this.dataSource.getRepository(StyleIngredient)
+            .createQueryBuilder('di')
+            .where({ styleId })
+            .getMany();
+        
+        for(let si of ings) {
+            await this.ingredientRepo.update(
+                { ingredientId: si.ingredientId }, 
+                { currentStock: () => `current_stock - ${si.amount}` }
+            );
+        }
+    }
 
-        qb.set({ currentStock: () => `current_stock + ${diff}` });
-
-        return qb.execute();
+    async decreaseStockFromDinnerOption(dinnerOptionId: number) {
+        const options = await this.dataSource.getRepository(DinnerOption)
+            .createQueryBuilder('do')
+            .where({ dinnerOptionId })
+            .getMany();
+        
+        for(let opt of options) {
+            await this.ingredientRepo.update(
+                { ingredientId: opt.ingredientId },
+                { currentStock: () => `current_stock - ${opt.ingredientAmount}` }
+            )
+        }
     }
 }

@@ -1,3 +1,4 @@
+import { CONFIG } from "@/config";
 import { StaffAlarmEventGateway } from "@/gateway/staff.gateway";
 import { PageOptionsDto, PageResultDto, PageResultPromise } from "@/model/dto/common.dto";
 import { CreateOrderDinnerDto, UpdateOrderDinnerDto, UpdateOrderMetaDto } from "@/model/dto/order.dto";
@@ -6,7 +7,7 @@ import { OrderDinnerOption } from "@/model/entity/OrderDinnerOption";
 import { OrderState, UserGrade } from "@/model/enum";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectDataSource, InjectRepository } from "@nestjs/typeorm";
-import { isDate, isNumberString, isPhoneNumber, isString } from "class-validator";
+import { isDate, isNotEmpty, isNumberString, isPhoneNumber, isString } from "class-validator";
 import { DataSource, DeleteResult, FindOptionsOrder, Not, QueryBuilder, Repository, UpdateQueryBuilder, UpdateResult } from "typeorm";
 import { IngredientService } from "./ingredient.service";
 import { MenuService } from "./menu.service";
@@ -38,7 +39,7 @@ export class OrderService {
     public async getOrdersBy(
         query: { userId?: string, orderState?: OrderState },
         pageOptions?: PageOptionsDto
-    ): PageResultPromise<Order> {
+    ) {
         const qb = this.orderRepo.createQueryBuilder()
             .select();
 
@@ -46,13 +47,21 @@ export class OrderService {
 
         if (query.userId) qb.andWhere({ userId: query.userId });
         if (query.orderState) qb.andWhere({ orderState: query.orderState });
-
+        
         if(pageOptions) {
             if (pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection);
             qb.skip(pageOptions.skip).take(pageOptions.take);
         }
 
-        const [items, count] = await qb.getManyAndCount();
+
+        const [pure_items, count] = await qb.getManyAndCount();
+
+        const items = [];
+        for(let va of pure_items) {
+            items.push({...va, orderDinnerCount:
+                await this.orderDinnerRepo.countBy({ orderId: va.orderId }),
+            });
+        } 
 
         // CART가 아닌 실제 주문이므로, 가격을 다시 계산할 필요는 없음.
 
@@ -101,27 +110,53 @@ export class OrderService {
     }
 
     public async addOrderDinner(orderId: number, dto: CreateOrderDinnerDto) {
-        return this.orderDinnerRepo.createQueryBuilder()
-            .insert()
-            .values({ orderId, ...dto })
-            .execute();
+        const orderDinner = new OrderDinner();
+        orderDinner.orderId = orderId;
+        orderDinner.dinnerId = dto.dinnerId;
+        orderDinner.styleId = dto.styleId;
+        orderDinner.degreeId = dto.degreeId;
+        orderDinner.orderDinnerOptions = dto.dinnerOptionIds.map(ent => {
+            const option = new OrderDinnerOption();
+            option.dinnerOptionId = ent.id;
+            option.amount = ent.amount;
+            return option;
+        });
+
+        orderDinner.totalDinnerPrice = await this.getPriceOfOrderDinner(orderDinner);
+
+        return this.orderDinnerRepo.save(orderDinner);
     }
 
     public async updateOrderDinner(orderDinnerId: number, dto: UpdateOrderDinnerDto) {
-        const qb = this.orderDinnerRepo.createQueryBuilder()
-            .update()
-            .where({ orderDinnerId })
-            .set({ ...dto });
+        const orderDinner = await this.orderDinnerRepo.findOne({
+            relations: { orderDinnerOptions: true },
+            where: { orderDinnerId },
+        });
 
-        return await qb.execute();
+        if(dto.dinnerId !== undefined) orderDinner.dinnerId = dto.dinnerId;
+        if(dto.styleId !== undefined) orderDinner.styleId = dto.styleId;
+        if(dto.degreeId !== undefined) orderDinner.degreeId = dto.degreeId;
+        if(dto.dinnerOptionIds !== undefined)
+            orderDinner.orderDinnerOptions = dto.dinnerOptionIds.map(ent => {
+                const option = new OrderDinnerOption();
+                option.orderDinnerId = orderDinnerId;
+                option.dinnerOptionId = ent.id;
+                option.amount = ent.amount;
+                return option;
+            });
+
+        orderDinner.totalDinnerPrice = await this.getPriceOfOrderDinner(orderDinner);
+
+        return this.orderDinnerRepo.save(orderDinner);
     }
 
     public async deleteOrderDinner(orderDinnerId: number) {
-        const qb = this.orderDinnerRepo.createQueryBuilder()
-            .delete()
-            .where({ orderDinnerId });
-
-        return await qb.execute();
+        const orderDinner = await this.orderDinnerRepo.findOne({
+            relations: { order: true },
+            where: { orderDinnerId },
+        });
+        
+        return await this.orderDinnerRepo.delete(orderDinner);
     }
 
     /**
@@ -134,15 +169,10 @@ export class OrderService {
         if (!cart) throw new Error('0');
         if (!this.isOrderable(cart)) throw new Error('1');
 
-        const userGrade: UserGrade
-            = await this.dataSource.getRepository(User).createQueryBuilder('u')
-                .select(['grade']).execute();
+        await this.updatePriceOfOrder(cart.orderId);
 
-        // 단골 고객 할인 적용
-        const discount = userGrade === UserGrade.VIP ? DISCOUNT_VIP : 0;
-
-        const qb = (await this.makeUpdatePriceOfOrder(cart, discount))
-            .where({ orderId: cart.orderId });
+        const qb = await this.orderRepo.createQueryBuilder()
+            .update().where({ orderId: cart.orderId });
 
         const result = await qb.set({
             orderDate: () => 'NOW()',
@@ -150,24 +180,10 @@ export class OrderService {
         }).execute();
 
         // 재료 차감
-        /*for(let orderDinner of cart.orderDinners) {
-            const dinnerIngredients = (await this.ingredientService.getIngredientsBy({ dinnerId: orderDinner.dinnerId })).items;
-            const styleIngredients = (await this.ingredientService.getIngredientsBy({ styleId: orderDinner.styleId })).items;
-            const optionIngredients = (await this.ingredientService.getIngredientById({  })) 
-            for(let ingredient of dinnerIngredients) {
-                this.ingredientService.decreaseStock(ingredient.ingredientId, )
-            }
-
-            const usedIng = {};
+        for(let orderDinner of cart.orderDinners) {
             
-            for(let ingredient of dinnerIngredients) {
-                if(usedIng[ingredient.ingredientId] === undefined)
-                    usedIng[ingredient.ingredientId] = 0;
-                usedIng[ingredient.ingredientId] += ingredient.
-            }
-        }*/
+        }
 
-        // 주문 횟수 증가 (비동기로)
         // (단골 할인보다 후순위로 -> '이번 주문'으로 단골 여부가 달라질 수 있기 때문)
         const becomeVip = (await this.userService.incrementOrderCount(cart.userId, 1)).becomeVip;
 
@@ -180,7 +196,7 @@ export class OrderService {
             }
         })();
 
-        return { orderId: cart.orderId, becomeVip: becomeVip };
+        return { ...await this.getOrderById(cart.orderId, true), becomeVip: becomeVip };
     }
 
     /**
@@ -190,12 +206,11 @@ export class OrderService {
     public async getOrCreateCart(userId: string): Promise<Order> {
         const order = await this.getCart(userId);
         if (!order) return await this.createEmptyCart(userId);
-
         return order;
     }
 
     private async getCart(userId: string): Promise<Order> {
-        const order = await this.orderRepo.findOne({
+        let order = await this.orderRepo.findOne({
             relations: {
                 orderDinners: { orderDinnerOptions: true }
             },
@@ -205,11 +220,11 @@ export class OrderService {
             },
         });
 
+        
         if (!order) return null;
-
-        if (order.orderDinners) {
-            (await this.makeUpdatePriceOfOrder(order, 0)).execute();
-        }
+        
+        if (order.orderDinners)
+            order = await this.updatePriceOfOrder(order.orderId);
 
         return order;
     }
@@ -224,11 +239,6 @@ export class OrderService {
 
     // Private Methods
 
-    /**
-     * 주문을 진행해도 되는지 체크
-     * @param order
-     * @returns 주문 가능한 상태인지 (정보가 모두 주어졌는지)
-     */
     private isOrderable(order: Order): boolean {
         return (
             order &&
@@ -239,38 +249,29 @@ export class OrderService {
         );
     }
 
-    /**
-     * Order의 가격 정보를 계산하고 이를 적용하는 쿼리 빌더를 반환
-     * @param order 
-     * @param discount 할인 받을 금액 (총액이 0 이하라면 0으로 처리한다)
-     * @param cascade (기본 true) OrderDinner들의 변화도 디비에 기록할 것인지
-     * @param _qb 
-     * @returns 해당 쿼리들이 적용된 쿼리 빌더
-     */
-    private async makeUpdatePriceOfOrder(order: Order, discount: number, cascade: boolean = true, _qb?: UpdateQueryBuilder<Order>) {
-        const qb = _qb ?? this.orderRepo.createQueryBuilder('o').update()
-            .where({ orderId: order.orderId });
+    private async updatePriceOfOrder(orderId: number) {
+        const order = await this.orderRepo.findOne({
+            relations: { orderDinners: { orderDinnerOptions: true }, user: true },
+            where: { orderId },
+        });
 
         let price: number = 0;
 
-        for (const orderDinner of order.orderDinners) {
-            const tempPrice = await this.getPriceOfOrderDinner(orderDinner);
-            if (cascade) {
-                await this.orderDinnerRepo.createQueryBuilder('od')
-                    .update().where({ orderId: order.orderId })
-                    .set({ totalDinnerPrice: tempPrice })
-                    .execute()
-                    .then(() => {
-                        orderDinner.totalDinnerPrice = tempPrice;
-                    });
-            }
-            price += tempPrice;
-        }
+        for(let od of order.orderDinners)
+            await this.getPriceOfOrderDinner(od)
+                .then(pr => {
+                    od.totalDinnerPrice = pr;
+                    price += pr;
+                });
 
-        qb.set({ totalPrice: price, paymentPrice: Math.max(price - discount, 0) });
-        qb.setParameter('totalPrice', price);
+        const discount = order.user.grade === UserGrade.VIP ? CONFIG.user.discountForVip : 0;
 
-        return qb;
+        order.totalPrice = price;
+        order.paymentPrice = price - discount;
+
+        order.user = undefined;
+
+        return await this.orderRepo.save(order);
     }
 
     /**
@@ -278,28 +279,26 @@ export class OrderService {
      * @param orderDinner 
      * @returns 해당 OrderDinner의 가격
      */
-    private async getPriceOfOrderDinner(orderDinner: OrderDinner): Promise<number> {
+    private async getPriceOfOrderDinner(orderDinner: OrderDinner|number): Promise<number> {
+        const od = await this.orderDinnerRepo.findOne({
+            relations: {
+                orderDinnerOptions: true,
+            },
+            where: { orderDinnerId: orderDinner instanceof OrderDinner ? orderDinner.orderDinnerId : orderDinner }
+        });
+
         let price: number = 0;
 
-        const dinner = await this.menuService.getDinnerById(orderDinner.dinnerId);
+        const dinner = await this.menuService.getDinnerById(od.dinnerId);
         price += dinner.dinnerPrice;
 
-        const style = await this.menuService.getStyleById(orderDinner.styleId);
+        const style = await this.menuService.getStyleById(od.styleId);
         price += style.stylePrice;
 
-        orderDinner.orderDinnerOptions.forEach(option => {
+        od.orderDinnerOptions.forEach(option => {
             price += option.dinnerOption.dinnerOptionPrice;
         });
 
         return price;
     }
-
-    private async makeUpdateIngQuantity(orderDinner: OrderDinner) {
-        
-    }
-
-
-
-
-
 }

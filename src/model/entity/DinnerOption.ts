@@ -10,6 +10,7 @@ import {
   PrimaryGeneratedColumn
 } from "typeorm";
 import { Dinner } from "./Dinner";
+import { Ingredient } from "./Ingredient";
 import { OrderDinner } from "./OrderDinner";
 import { OrderDinnerOption } from "./OrderDinnerOption";
 
@@ -30,6 +31,12 @@ export class DinnerOption {
   @Column("int")
   dinnerOptionPrice: number;
 
+  @Column("int")
+  ingredientId: number;
+
+  @Column("int")
+  ingredientAmount: number;
+
   // Relations
 
   @ManyToOne(() => Dinner, (dinner) => dinner.dinnerOptions)
@@ -38,4 +45,8 @@ export class DinnerOption {
 
   @OneToMany(() => OrderDinnerOption, (o) => o.dinnerOption)
   orderDinnerOptions: OrderDinnerOption[];
+
+  @ManyToOne(() => Ingredient)
+  @JoinColumn({ name: "ingredient_id", referencedColumnName: "ingredientId" })
+  ingredient: Ingredient;
 }

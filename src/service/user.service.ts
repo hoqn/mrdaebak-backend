@@ -118,6 +118,8 @@ export class UserService {
             
             return { becomeVip: true };
         }
+
+        return { becomeVip: false };
     }
     async decrementOrderCount(userId: string, quantity: number) {
         return await this.userRepo.createQueryBuilder('u')

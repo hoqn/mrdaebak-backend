@@ -7,10 +7,12 @@ import {
   ManyToMany,
   ManyToOne, OneToMany, OneToOne, PrimaryGeneratedColumn
 } from "typeorm";
+import { Dinner } from "./Dinner";
 import { DinnerOption } from "./DinnerOption";
 import { Order } from "./Order";
 import { OrderDinnerOption } from "./OrderDinnerOption";
 import { SteakDonenessDegree } from "./SteakDonenessDegree";
+import { Style } from "./Style";
 
 @Entity("order_dinner")
 export class OrderDinner {
@@ -33,7 +35,7 @@ export class OrderDinner {
   styleId: number;
 
   @ManyToOne(() => Order, (order) => order.orderDinners)
-  @JoinColumn([{ name: "order_id", referencedColumnName: "orderId" }])
+  @JoinColumn({ name: "order_id", referencedColumnName: "orderId" })
   order: Order;
 
   @ManyToOne(() => SteakDonenessDegree)
@@ -51,6 +53,14 @@ export class OrderDinner {
   })
   dinnerOptions: DinnerOption[];
   */
+
+  @ManyToOne(() => Dinner)
+  @JoinColumn({ name: 'dinner_id', referencedColumnName: 'dinnerId' })
+  dinner: Dinner;
+
+  @ManyToOne(() => Style)
+  @JoinColumn({ name: 'style_id', referencedColumnName: 'styleId' })
+  style: Style;
 
   @OneToMany(() => OrderDinnerOption, o => o.orderDinner)
   orderDinnerOptions: OrderDinnerOption[];

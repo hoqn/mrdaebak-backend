@@ -20,26 +20,12 @@ const typeOrmConfig = <TypeOrmModuleOptions>{
     Staff, User,
     SteakDonenessDegree, //DinnerStyle,
   ],
-  synchronize: false,
-  /* TODO: false로 바꿀 것! */
   namingStrategy: new SnakeNamingStrategy(),
   timezone: 'local',
   logging: ['error'],
 };
 
 const typeOrmModule = TypeOrmModule.forRoot(typeOrmConfig);
-
-/*
-async function migration(typeormConfig: any) {
-  const connection = await createConnection(typeormConfig);
-  await connection.query('USE mrdaebak');
-  await connection.query('SET foreign_key_checks=0');
-  await connection.synchronize();
-  await connection.query('SET foreign_key_checks=1');
-}
-
-migration(typeormConfig);
-*/
 
 @Module({
   imports: [

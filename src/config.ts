@@ -13,6 +13,7 @@ export interface StaffAlarmConfig {
 }
 
 export interface UserConfig {
+    discountForVip: number,
     orderCountForVip: number,
     alarm: UserAlarmConfig,
 }
@@ -23,7 +24,7 @@ export interface UserAlarmConfig {
 
 export interface IngredientsConfig {
     deliveredDate: {
-        byDayOfWeek?: { 
+        byDayOfWeek?: {
             sun?: boolean,
             mon?: boolean,
             tue?: boolean,
@@ -31,7 +32,7 @@ export interface IngredientsConfig {
             thu?: boolean,
             fri?: boolean,
             sat?: boolean,
-         },
+        },
     },
 }
 
@@ -54,6 +55,8 @@ const defaultConfig: Config = {
         username: 'root',
         password: 'password',
         database: 'dbname',
+        synchronize: false,
+        /* TODO: false로 바꿀 것! */
     },
     staff: {
         alarm: {
@@ -64,6 +67,7 @@ const defaultConfig: Config = {
         }
     },
     user: {
+        discountForVip: 5000,
         orderCountForVip: 5,
         alarm: {
             changeOrderState: true,

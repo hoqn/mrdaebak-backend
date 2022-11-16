@@ -30,6 +30,11 @@ export class UpdateOrderMetaDto extends PartialType(CreateOrderDto) { }
  * ORDERDINNER
  */
 
+class DinnerOptionIdMapEntity {
+    id: number;
+    amount: number;
+}
+
  export class CreateOrderDinnerDto {
     @IsNumber() @IsOptional()
     degreeId: number;
@@ -38,7 +43,7 @@ export class UpdateOrderMetaDto extends PartialType(CreateOrderDto) { }
     dinnerId: number;
 
     @IsArray() @IsOptional()
-    dinnerOptionIds: number[];
+    dinnerOptionIds: DinnerOptionIdMapEntity[];
 
     @IsNumber()
     styleId: number;
