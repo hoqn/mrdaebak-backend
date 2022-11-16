@@ -29,7 +29,7 @@ async function bootstrap() {
   const host = process.env.SERVER_HOST ?? CONFIG.server.host ?? 'localhost';
   const port = process.env.SERVER_PORT ?? CONFIG.server.port ?? '3000';
   
-  await apiApp.listen(CONFIG.server.port, CONFIG.server.host)
+  await apiApp.listen(CONFIG.server.port)//, CONFIG.server.host)
     .then(() => {
       console.info(`\n\n[*]  🎅  Mr.Daebak Backend 서버가 http://${host}:${port}에 시작됩니다.\n\n`);
     });
