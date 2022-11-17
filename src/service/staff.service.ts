@@ -13,7 +13,7 @@ export class StaffService {
         @InjectRepository(Staff) private readonly staffRepo: Repository<Staff>
     ) { }
 
-    async addNewMember(role: StaffRole, dto: CreateStaffReq) {
+    async createMember(role: StaffRole, dto: CreateStaffReq) {
         const existing = await this.staffRepo.findOneBy({ staffId: dto.staffId });
         if(existing) throw new IdDuplicatedException();
 

@@ -20,7 +20,7 @@ export class StaffController {
     ) {
         const role = body.staffRole;
 
-        return await this.staffService.addNewMember(role, body)
+        return await this.staffService.createMember(role, body)
             .catch(e => {
                 if(e instanceof IdDuplicatedException) 
                     throw new NotAcceptableException(undefined, 'ID가 중복됩니다.')

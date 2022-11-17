@@ -25,16 +25,19 @@ export class UserService {
         // ID 중복 체크
         const existing = await this.userRepo.findOneBy({ userId: body.userId });
         if (existing) throw new IdDuplicatedException();
-
-        const qb = this.userRepo.createQueryBuilder()
-            .insert();
-
-        qb.values({
-            ...body,
+        
+        const user = await this.userRepo.save(<User> {
+            userId: body.userId,
             password: PasswordEncryptor.encrypt(body.password),
+            userName: body.userName,
+            phoneNumber: body.phoneNumber,
+            address: body.address,
+            cardNumber: body.cardNumber, 
         });
 
-        return qb.execute();
+        user.password = undefined;
+
+        return user;
     }
 
     async getUsers() {

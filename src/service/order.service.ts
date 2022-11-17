@@ -53,7 +53,6 @@ export class OrderService {
             qb.skip(pageOptions.skip).take(pageOptions.take);
         }
 
-
         const [pure_items, count] = await qb.getManyAndCount();
 
         const items = [];

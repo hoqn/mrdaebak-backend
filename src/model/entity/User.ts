@@ -17,7 +17,7 @@ export class User  extends Client{
   userName: string;
 
   @Exclude()
-  @Column("varchar", {length: 255 })
+  @Column("varchar", {length: 255, select: false })
   password: string;
 
   @Column("varchar", { length: 255 })

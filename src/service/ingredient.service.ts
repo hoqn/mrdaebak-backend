@@ -1,6 +1,6 @@
 import { PageOptionsDto, PageResultDto, PageResultPromise } from "@/model/dto/common.dto";
 import { CreateIngredientReq, UpdateIngredientReq } from "@/model/dto/ingredient.dto";
-import { DinnerIngredient, DinnerOption, Ingredient, IngredientCategory, StyleIngredient } from "@/model/entity";
+import { Dinner, DinnerIngredient, DinnerOption, Ingredient, IngredientCategory, Order, StyleIngredient } from "@/model/entity";
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { DataSource, EntityTarget, ObjectType, Repository } from "typeorm";
@@ -102,6 +102,18 @@ export class IngredientService {
         return new PageResultDto(pageOptions, count, items);
     }
 
+    async checkAndDecreaseStockForOrder(orderId: number) {
+        const ings = {};
+        const order = await this.dataSource.getRepository(Order).findOne({
+            relations: { orderDinners: { orderDinnerOptions: true } },
+            where: { orderId }
+        });
+
+        for(let od of order.orderDinners) {
+            //od.dinner.
+        }
+    }
+
     async decreaseStockFromDinner(dinnerId: number) {
         const ings = await this.dataSource.getRepository(DinnerIngredient)
             .createQueryBuilder('di')
@@ -143,4 +155,5 @@ export class IngredientService {
             )
         }
     }
+
 }
