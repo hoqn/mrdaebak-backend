@@ -123,9 +123,11 @@ export class IngredientService {
         await this.ingredientRepo.update({ ingredientId }, {
             todayArrived: current.todayArrived,
         });
-
+        
         return { ingredientId, ...current };
     }
+    
+    // Ingredients Order
 
     async getIngredientOrderStocks(pageOptions: PageOptionsDto) {
         const qb = this.ingredientRepo.createQueryBuilder('i')
@@ -158,6 +160,13 @@ export class IngredientService {
         });
 
         return { ingredientId, ...current };
+    }
+
+    async receiveAllIngredientOrderStock() {
+        this.ingredientRepo.update(
+            { orderedNumber: MoreThan(0) },
+            { todayArrived: () => `today_arrived + orderd_number`, orderedNumber: 0 }
+        )
     }
 
     // Stock Applications

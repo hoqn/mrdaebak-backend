@@ -2,7 +2,7 @@ import { PageOptionsDto } from "@/model/dto/common.dto";
 import { UpdateOrderDinnerDto } from "@/model/dto/order.dto";
 import { OrderState } from "@/model/enum";
 import { OrderService } from "@/service/order.service";
-import { BadRequestException, Body, Controller, Delete, ForbiddenException, Get, InternalServerErrorException, NotFoundException, Param, Post, Put, Query } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, ForbiddenException, Get, InternalServerErrorException, NotFoundException, Param, Patch, Post, Put, Query } from "@nestjs/common";
 
 @Controller('orders')
 export class OrderController {
@@ -58,24 +58,31 @@ export class OrderController {
         };
     }
 
-    @Get(':orderId/i/:orderDinnerId')
+    @Get(':orderId/dinners/:orderDinnerId')
     async getOrderDinner(
-        //@Param('orderId') orderId: number,
+        @Param('orderId') orderId: number,
         @Param('orderDinnerId') orderDinnerId: number,
     ) {
-        return await this.orderService.getOrderDinnerById(orderDinnerId);
+        const orderDinner = await this.orderService.getOrderDinnerById(orderDinnerId, orderId);
+
+        if(!orderDinner) throw new NotFoundException();
+
+        return orderDinner;
     }
 
-    @Put(':orderId/i/:orderDinnerId')
+    @Put(':orderId/dinners/:orderDinnerId')
     async updateOrderDinner(
         //@Param('orderId') orderId: number,
         @Param('orderDinnerId') orderDinnerId: number,
         @Body() body: UpdateOrderDinnerDto,
     ) {
-        return await this.orderService.updateOrderDinner(orderDinnerId, body);
+        const orderDinner = await this.orderService.updateOrderDinner(orderDinnerId, body);
+
+        if(!orderDinner) throw new NotFoundException();
+        return orderDinner;
     }
 
-    @Delete(':orderId/i/:orderDinnerId')
+    @Delete(':orderId/dinners/:orderDinnerId')
     async deleteOrderDinner(
         //@Param('orderId') orderId: number,
         @Param('orderDinnerId') orderDinnerId: number,

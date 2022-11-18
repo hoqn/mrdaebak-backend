@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 
-import { AuthModule, CartModule, MenuModule, OrderModule, UserModule } from '@/module';
+import { AuthModule, CartModule, MenuModule, OrderModule, StoreModule, UserModule } from '@/module';
 
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { CONFIG } from './config';
@@ -36,6 +36,7 @@ const typeOrmModule = TypeOrmModule.forRoot(typeOrmConfig);
     OrderModule,
     CartModule,
     IngredientModule,
+    StoreModule,
   ]
 })
 export class AppModule { }
