@@ -20,6 +20,8 @@ export class Dinner {
   @Column("varchar", { length: 255 })
   dinnerDetail: string;
 
+  // Relations
+
   @ManyToMany(() => Ingredient, (ingredient) => ingredient.dinners)
   @JoinTable({ 
     name: "dinner_ingredient",

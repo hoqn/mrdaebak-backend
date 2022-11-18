@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, IsString } from "class-validator";
+import { IsBoolean, IsIn, IsNumber, IsOptional, IsString } from "class-validator";
 import { Ingredient } from "../entity";
 
 export class CreateIngredientReq {
@@ -48,4 +48,14 @@ export class UpdateIngredientReq {
 
     @IsNumber() @IsOptional()
     readonly orderedNumber?: number;
+}
+
+export type UpdateIngredientStockDtoArray = UpdateIngredientStockDto[];
+
+export class UpdateIngredientStockDto {
+    @IsNumber()
+    readonly ingredientId: number;
+
+    @IsNumber()
+    readonly amount: number;
 }

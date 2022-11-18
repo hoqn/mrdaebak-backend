@@ -1,9 +1,11 @@
+import { IdDuplicatedException, OutOfLimitException } from "@/exception";
 import { PageOptionsDto, PageResultDto, PageResultPromise } from "@/model/dto/common.dto";
-import { CreateIngredientReq, UpdateIngredientReq } from "@/model/dto/ingredient.dto";
-import { Dinner, DinnerIngredient, DinnerOption, Ingredient, IngredientCategory, Order, StyleIngredient } from "@/model/entity";
+import { CreateIngredientReq, UpdateIngredientReq, UpdateIngredientStockDto } from "@/model/dto/ingredient.dto";
+import { Dinner, DinnerIngredient, DinnerOption, Ingredient, IngredientCategory, Order, OrderDinner, Style, StyleIngredient } from "@/model/entity";
+import { OrderDinnerOption } from "@/model/entity/OrderDinnerOption";
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
-import { DataSource, EntityTarget, ObjectType, Repository } from "typeorm";
+import { DataSource, EntityTarget, MoreThan, ObjectType, Repository } from "typeorm";
 
 @Injectable()
 export class IngredientService {
@@ -12,6 +14,8 @@ export class IngredientService {
         @InjectRepository(Ingredient) private readonly ingredientRepo: Repository<Ingredient>,
         @InjectRepository(IngredientCategory) private readonly ingCategoryRepo: Repository<IngredientCategory>,
     ) { }
+
+    // Ingredients
 
     async getAllIngredients(
         pageOptions: PageOptionsDto,
@@ -45,19 +49,14 @@ export class IngredientService {
 
         if (query.ingredientName !== undefined) qb.andWhere({ ingredientName: query.ingredientName });
 
-        if (pageOptions === undefined) {
+        if (pageOptions !== undefined) {
             if (pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection)
             qb.skip(pageOptions.skip).take(pageOptions.take);
-
-            const [items, count] = await qb.getManyAndCount();
-
-            return new PageResultDto(pageOptions, count, items);
-        } else {
-            return <PageResultDto<Ingredient>>{
-                items: await qb.getMany(),
-            };
         }
 
+        const [items, count] = await qb.getManyAndCount();
+
+        return new PageResultDto(pageOptions, count, items);
     }
 
     async getIngredientById(ingredientId: number) {
@@ -71,12 +70,13 @@ export class IngredientService {
     async updateIngredient(ingredientId: number, body: UpdateIngredientReq) {
         const qb = this.ingredientRepo.createQueryBuilder()
             .update().where({ ingredientId }).set(body);
-        const result = qb.execute();
+        
+        const result = await qb.execute();
 
         return result;
     }
 
-
+    // Categories
 
     async getAllIngredientCategories(
         pageOptions: PageOptionsDto
@@ -102,58 +102,126 @@ export class IngredientService {
         return new PageResultDto(pageOptions, count, items);
     }
 
-    async checkAndDecreaseStockForOrder(orderId: number) {
-        const ings = {};
-        const order = await this.dataSource.getRepository(Order).findOne({
-            relations: { orderDinners: { orderDinnerOptions: true } },
+    // Stocks
+
+    async setIngredientTodayStock(ingredientId: number, amount: number, mode: 'ADD' | 'SET') {
+        const current = await this.ingredientRepo.findOne({
+            select: {
+                prevStock: true,
+                todayArrived: true,
+                todayOut: true,
+            },
+            where: { ingredientId }
+        });
+
+        if(mode === 'ADD') current.todayArrived += amount;
+        else current.todayArrived = amount;
+
+        if (current.todayArrived < 0 || current.currentStock < 0)
+            throw new OutOfLimitException();
+
+        await this.ingredientRepo.update({ ingredientId }, {
+            todayArrived: current.todayArrived,
+        });
+
+        return { ingredientId, ...current };
+    }
+
+    async getIngredientOrderStocks(pageOptions: PageOptionsDto) {
+        const qb = this.ingredientRepo.createQueryBuilder('i')
+            .select().where({ orderedNumber: MoreThan(0) });
+
+        if (pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection);
+        qb.skip(pageOptions.skip).take(pageOptions.take);
+
+        const [items, count] = await qb.getManyAndCount();
+
+        return new PageResultDto(pageOptions, count, items);
+    }
+
+    async setIngredientOrderStock(ingredientId: number, amount: number, mode: 'ADD' | 'SET') {
+        const current = await this.ingredientRepo.findOne({
+            select: {
+                orderedNumber: true,
+            },
+            where: { ingredientId }
+        });
+
+        if(mode === 'ADD') current.orderedNumber += amount;
+        else current.orderedNumber = amount;
+
+        if (current.orderedNumber < 0)
+            throw new OutOfLimitException();
+
+        await this.ingredientRepo.update({ ingredientId }, {
+            orderedNumber: current.orderedNumber,
+        });
+
+        return { ingredientId, ...current };
+    }
+
+    // Stock Applications
+
+    async safeDecreaseIngredientStockForOrder(orderId: number): Promise<boolean> {
+        const ingredients = await this.calculateIngredientStockForOrder(orderId);
+
+        for(let [ingredientId, amount] of ingredients.entries()) {
+            const { currentStock } = await this.ingredientRepo.findOne({
+                select: { currentStock: true },
+                where: { ingredientId },
+            });
+
+            if (currentStock - amount < 0)
+                return false; // 불가
+        }
+
+        // 가능
+
+        for(let [ingredientId, amount] of ingredients.entries()) {
+            await this.ingredientRepo.update({ ingredientId }, {
+                todayOut: () => `today_out - ${amount}`
+            });
+        }
+
+        return true;
+    }
+
+    async calculateIngredientStockForOrder(orderId: number) {
+        const ingredients: Map<number, number> = new Map();
+
+        const orderDinners = await this.dataSource.getRepository(OrderDinner).find({
             where: { orderId }
         });
 
-        for(let od of order.orderDinners) {
-            //od.dinner.
+        const addIng = (ingredientId: number, addAmount: number) => {
+            if(ingredients[ingredientId] === undefined) ingredients[ingredientId] = 0;
+            ingredients[ingredientId] += addAmount;
         }
-    }
 
-    async decreaseStockFromDinner(dinnerId: number) {
-        const ings = await this.dataSource.getRepository(DinnerIngredient)
-            .createQueryBuilder('di')
-            .where({ dinnerId })
-            .getMany();
-        
-        for(let di of ings) {
-            await this.ingredientRepo.update(
-                { ingredientId: di.ingredientId }, 
-                { currentStock: () => `current_stock - ${di.amount}` }
-            );
-        }
-    }
+        for(let orderDinner of orderDinners) {
+            // Dinner
+            const di = await this.dataSource.getRepository(DinnerIngredient).findOneBy({
+                dinnerId: orderDinner.dinnerId
+            });
+            addIng(di.ingredientId, di.amount);
 
-    async decreaseStockFromStyle(styleId: number) {
-        const ings = await this.dataSource.getRepository(StyleIngredient)
-            .createQueryBuilder('di')
-            .where({ styleId })
-            .getMany();
-        
-        for(let si of ings) {
-            await this.ingredientRepo.update(
-                { ingredientId: si.ingredientId }, 
-                { currentStock: () => `current_stock - ${si.amount}` }
-            );
-        }
-    }
+            // Style
+            const si = await this.dataSource.getRepository(StyleIngredient).findOneBy({
+                styleId: orderDinner.styleId
+            });
+            addIng(si.ingredientId, si.amount);
 
-    async decreaseStockFromDinnerOption(dinnerOptionId: number) {
-        const options = await this.dataSource.getRepository(DinnerOption)
-            .createQueryBuilder('do')
-            .where({ dinnerOptionId })
-            .getMany();
-        
-        for(let opt of options) {
-            await this.ingredientRepo.update(
-                { ingredientId: opt.ingredientId },
-                { currentStock: () => `current_stock - ${opt.ingredientAmount}` }
-            )
+            // Options
+            const orderOptions = await this.dataSource.getRepository(OrderDinnerOption).find({
+                relations: { dinnerOption: true },
+                where: { orderDinnerId: orderDinner.orderDinnerId }
+            });
+            for(let orderOption of orderOptions) {
+                addIng(orderOption.dinnerOption.ingredientId, orderOption.dinnerOption.ingredientAmount);
+            }
         }
+
+        return ingredients;
     }
 
 }

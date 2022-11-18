@@ -1,3 +1,4 @@
+import { CONFIG } from "@/config";
 import {
   Column,
   Entity, JoinColumn,
@@ -47,8 +48,26 @@ export class Ingredient {
   /**
    * 현재 재고: 현재의 양
    */
-  @Column("int", { default: 0 }) //
+  //@Column("int", { default: 0 }) //
+  //currentStock: number;
+
+  @Column("int", { default: 0 })
+  /*public get currentStock(): number {
+    if(
+      this.prevStock === undefined ||
+      this.todayArrived === undefined ||
+      this.todayOut === undefined
+    ){
+      return undefined;
+    }
+    else {
+      const result = this.prevStock + this.todayArrived - this.todayOut;
+      return result;
+    }
+  }*/
   currentStock: number;
+
+  public static readonly CURRENT_STOCK_CALC_QUERY = 'prev_stock + today_arrived - today_out';
 
   /**
    * 발주 수량: 발주되어 배송을 기다리는 양

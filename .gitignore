@@ -15,6 +15,7 @@ lerna-debug.log*
 yarn.lock
 .env
 app.config.js
+.yarn
 
 # OS
 .DS_Store
