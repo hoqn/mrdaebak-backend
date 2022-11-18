@@ -194,9 +194,7 @@ export class OrderService {
         }).execute();
 
         // 재료 차감
-        for(let orderDinner of cart.orderDinners) {
-            
-        }
+        this.ingredientService.safeDecreaseIngredientStockForOrder(orderI)
 
         // (단골 할인보다 후순위로 -> '이번 주문'으로 단골 여부가 달라질 수 있기 때문)
         const becomeVip = (await this.userService.incrementOrderCount(cart.userId, 1)).becomeVip;

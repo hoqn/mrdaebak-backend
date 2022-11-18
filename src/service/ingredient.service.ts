@@ -203,7 +203,7 @@ export class IngredientService {
         });
 
         const addIng = (ingredientId: number, addAmount: number) => {
-            if(ingredients[ingredientId] === undefined) ingredients[ingredientId] = 0;
+            if(ingredients.has(ingredientId)) ingredients[ingredientId] = 0;
             ingredients[ingredientId] += addAmount;
         }
 
