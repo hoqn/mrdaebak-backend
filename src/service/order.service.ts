@@ -292,7 +292,9 @@ export class OrderService {
     private async getPriceOfOrderDinner(orderDinner: OrderDinner|number): Promise<number> {
         const od = await this.orderDinnerRepo.findOne({
             relations: {
-                orderDinnerOptions: true,
+                orderDinnerOptions: {
+                    dinnerOption: true,
+                },
             },
             where: { orderDinnerId: orderDinner instanceof OrderDinner ? orderDinner.orderDinnerId : orderDinner }
         });
@@ -306,7 +308,7 @@ export class OrderService {
         price += style.stylePrice;
 
         od.orderDinnerOptions.forEach(option => {
-            price += option.dinnerOption.dinnerOptionPrice;
+            price += option.dinnerOption.dinnerOptionPrice * option.amount;
         });
 
         return price;
