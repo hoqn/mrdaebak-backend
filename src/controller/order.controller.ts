@@ -45,17 +45,12 @@ export class OrderController {
     async postOrderFromCart(
         @Body('userId') userId: string
     ) {
-        const { orderId } = await this.orderService.newOrderFromCart(userId)
+        return await this.orderService.newOrderFromCart(userId)
             .catch((e: Error) => {
                 if(e.message === '0') throw new NotFoundException();
                 else if(e.message === '1') throw new BadRequestException('주문하려면 더 많은 정보가 필요합니다.');
                 else throw e;
             });
-        
-        return {
-            ...await this.orderService.getOrderById(orderId, false),
-            becomeVip: false,
-        };
     }
 
     @Get(':orderId/dinners/:orderDinnerId')
@@ -66,7 +61,6 @@ export class OrderController {
         const orderDinner = await this.orderService.getOrderDinnerById(orderDinnerId, orderId);
 
         if(!orderDinner) throw new NotFoundException();
-
         return orderDinner;
     }
 
