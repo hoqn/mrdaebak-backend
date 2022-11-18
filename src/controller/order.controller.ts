@@ -14,8 +14,13 @@ export class OrderController {
     async getOrders(
         @Query('user_id') userId?: string,
         @Query('state') orderState?: keyof typeof OrderState,
+        @Query('only_count') onlyCount?: boolean,
         @Query() pageOptions?: PageOptionsDto,
     ) {
+        if(onlyCount) {
+            return await this.orderService.getOrderCounts();
+        }
+
         const mOrderState = orderState ? OrderState[orderState.toUpperCase()] : undefined;
         if (mOrderState === OrderState.CART) throw new ForbiddenException();
 

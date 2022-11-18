@@ -28,6 +28,15 @@ export class OrderService {
         private readonly staffAlarm: StaffAlarmEventGateway,
     ) { }
 
+    public async getOrderCounts(){
+        const qb = this.orderRepo.createQueryBuilder('o')
+            .select('o.order_state, COUNT(o.order_id) as amount')
+            .where({ orderState: Not(OrderState.CART) })
+            .groupBy('o.order_state');
+
+        return await qb.execute();
+    }
+
     /**
      * Order
      */
