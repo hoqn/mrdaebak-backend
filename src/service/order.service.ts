@@ -113,8 +113,11 @@ export class OrderService {
      * ORDERDINNER
      */
 
-    public async getOrderDinnerById(orderDinnerId: number) {
-        return this.orderDinnerRepo.findOneBy({ orderDinnerId });
+    public async getOrderDinnerById(orderDinnerId: number, orderId?: number) {
+        return this.orderDinnerRepo.findOne({
+            relations: { orderDinnerOptions: true }, 
+            where: { orderDinnerId, orderId },
+        });
     }
 
     public async addOrderDinner(orderId: number, dto: CreateOrderDinnerDto) {
@@ -123,11 +126,10 @@ export class OrderService {
         orderDinner.dinnerId = dto.dinnerId;
         orderDinner.styleId = dto.styleId;
         orderDinner.degreeId = dto.degreeId;
-        orderDinner.orderDinnerOptions = dto.dinnerOptionIds.map(ent => {
-            const option = new OrderDinnerOption();
-            option.dinnerOptionId = ent.id;
-            option.amount = ent.amount;
-            return option;
+        orderDinner.orderDinnerOptions = dto.dinnerOptionIds.map(ent => <OrderDinnerOption>{
+            orderDinnerId: orderId,
+            dinnerOptionId: ent.id,
+            amount: ent.amount,
         });
 
         orderDinner.totalDinnerPrice = await this.getPriceOfOrderDinner(orderDinner);
