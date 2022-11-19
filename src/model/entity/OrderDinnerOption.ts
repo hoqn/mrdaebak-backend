@@ -15,11 +15,11 @@ export class OrderDinnerOption {
 
     // Relations
 
-    @ManyToOne(() => OrderDinner, o => o.orderDinnerOptions)
+    @ManyToOne(() => OrderDinner, o => o.orderDinnerOptions, { orphanedRowAction: 'delete' })
     @JoinColumn({ name: "order_dinner_id", referencedColumnName: "orderDinnerId" })
     orderDinner: OrderDinner;
 
-    @ManyToOne(() => DinnerOption, o => o.dinnerOptionId)
-    @JoinColumn({ name: "dinner_option_id", referencedColumnName: "dinnerOptionId" })
+    @ManyToOne(() => DinnerOption, o => o.dinnerOptionId, { orphanedRowAction: 'delete' })
+    @JoinColumn({ name: "dinner_option_id", referencedColumnName: "dinnerOptionId", })
     dinnerOption: DinnerOption;
 }

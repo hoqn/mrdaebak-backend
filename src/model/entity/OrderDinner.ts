@@ -65,6 +65,6 @@ export class OrderDinner {
   @JoinColumn({ name: 'style_id', referencedColumnName: 'styleId' })
   style: Style;
 
-  @OneToMany(() => OrderDinnerOption, o => o.orderDinner, {cascade: true})
+  @OneToMany(() => OrderDinnerOption, o => o.orderDinner, { cascade: true })
   orderDinnerOptions: OrderDinnerOption[];
 }

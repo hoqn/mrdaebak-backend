@@ -158,6 +158,7 @@ export class OrderService {
                 option.orderDinnerId = orderDinnerId;
                 option.dinnerOptionId = ent.id;
                 option.amount = ent.amount;
+                console.log(option);
                 return option;
             });
         if(dto.dinnerAmount !== undefined) orderDinner.dinnerAmount = dto.dinnerAmount;
