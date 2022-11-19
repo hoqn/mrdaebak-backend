@@ -3,6 +3,7 @@ import { PageOptionsDto, PageResultDto, PageResultPromise } from "@/model/dto/co
 import { CreateIngredientReq, UpdateIngredientReq, UpdateIngredientStockDto } from "@/model/dto/ingredient.dto";
 import { Dinner, DinnerIngredient, DinnerOption, Ingredient, IngredientCategory, Order, OrderDinner, Style, StyleIngredient } from "@/model/entity";
 import { OrderDinnerOption } from "@/model/entity/OrderDinnerOption";
+import { IngScheduleService } from "@/_experimental/schedules/ingschedule.service";
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { DataSource, EntityTarget, MoreThan, ObjectType, Repository } from "typeorm";
@@ -11,6 +12,7 @@ import { DataSource, EntityTarget, MoreThan, ObjectType, Repository } from "type
 export class IngredientService {
     constructor(
         private readonly dataSource: DataSource,
+        private readonly ingScheduleService: IngScheduleService,
         @InjectRepository(Ingredient) private readonly ingredientRepo: Repository<Ingredient>,
         @InjectRepository(IngredientCategory) private readonly ingCategoryRepo: Repository<IngredientCategory>,
     ) { }
@@ -169,12 +171,20 @@ export class IngredientService {
         )
     }
 
-    // Stock Applications
+    // Stock Application
 
     async safeDecreaseIngredientStockForOrder(orderId: number): Promise<boolean> {
-        const ingredients = await this.calculateIngredientStockForOrder(orderId);
+        const order = await this.dataSource.getRepository(Order)
+            .findOneBy({ orderId });
 
-        for(let [ingredientId, amount] of ingredients.entries()) {
+        const date = order.rsvDate;
+        const ingredients = await this.calculateIngredientStockForOrder(orderId, async (ingredientId, addAmount) => {
+            await this.ingScheduleService.pushRsvAmount(date, ingredientId, addAmount);
+        });
+
+        return true;
+
+        /*for(let [ingredientId, amount] of ingredients.entries()) {
             const { currentStock } = await this.ingredientRepo.findOne({
                 select: { currentStock: true },
                 where: { ingredientId },
@@ -185,26 +195,28 @@ export class IngredientService {
         }
 
         // 가능
-
         for(let [ingredientId, amount] of ingredients.entries()) {
             await this.ingredientRepo.update({ ingredientId }, {
                 todayOut: () => `today_out - ${amount}`
             });
         }
 
-        return true;
+        return true;*/
     }
 
-    async calculateIngredientStockForOrder(orderId: number) {
+    async calculateIngredientStockForOrder(orderId: number, addHook?: (ingredientId: number, addAmount: number) => Promise<void>) {
         const ingredients: Map<number, number> = new Map();
 
         const orderDinners = await this.dataSource.getRepository(OrderDinner).find({
             where: { orderId }
         });
 
-        const addIng = (ingredientId: number, addAmount: number) => {
+        const addIng = async (ingredientId: number, addAmount: number) => {
             if(ingredients.has(ingredientId)) ingredients[ingredientId] = 0;
             ingredients[ingredientId] += addAmount;
+
+            if(addHook)
+                await addHook(ingredientId, addAmount);
         }
 
         for(let orderDinner of orderDinners) {
@@ -212,13 +224,13 @@ export class IngredientService {
             const di = await this.dataSource.getRepository(DinnerIngredient).findOneBy({
                 dinnerId: orderDinner.dinnerId
             });
-            addIng(di.ingredientId, di.amount);
+            await addIng(di.ingredientId, di.amount);
 
             // Style
             const si = await this.dataSource.getRepository(StyleIngredient).findOneBy({
                 styleId: orderDinner.styleId
             });
-            addIng(si.ingredientId, si.amount);
+            await addIng(si.ingredientId, si.amount);
 
             // Options
             const orderOptions = await this.dataSource.getRepository(OrderDinnerOption).find({
@@ -226,7 +238,7 @@ export class IngredientService {
                 where: { orderDinnerId: orderDinner.orderDinnerId }
             });
             for(let orderOption of orderOptions) {
-                addIng(orderOption.dinnerOption.ingredientId, orderOption.dinnerOption.ingredientAmount);
+                await addIng(orderOption.dinnerOption.ingredientId, orderOption.dinnerOption.ingredientAmount);
             }
         }
 

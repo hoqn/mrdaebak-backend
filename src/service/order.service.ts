@@ -8,7 +8,7 @@ import { OrderState, UserGrade } from "@/model/enum";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectDataSource, InjectRepository } from "@nestjs/typeorm";
 import { isDate, isNotEmpty, isNumberString, isPhoneNumber, isString } from "class-validator";
-import moment from "moment";
+import * as moment from "moment";
 import { DataSource, DeleteResult, FindOptionsOrder, Not, QueryBuilder, Repository, UpdateQueryBuilder, UpdateResult } from "typeorm";
 import { IngredientService } from "./ingredient.service";
 import { MenuService } from "./menu.service";
@@ -185,7 +185,7 @@ export class OrderService {
         const qb = await this.orderRepo.createQueryBuilder()
             .update().where({ orderId: cart.orderId });
 
-        const today = moment();
+        const today = moment(new Date());
         const rsvDate = moment(cart.rsvDate);
 
         const result = await qb.set({
@@ -194,7 +194,7 @@ export class OrderService {
         }).execute();
 
         // 재료 차감
-        this.ingredientService.safeDecreaseIngredientStockForOrder(orderI)
+        const ingredients_orderable = this.ingredientService.safeDecreaseIngredientStockForOrder(cart.orderId);
 
         // (단골 할인보다 후순위로 -> '이번 주문'으로 단골 여부가 달라질 수 있기 때문)
         const becomeVip = (await this.userService.incrementOrderCount(cart.userId, 1)).becomeVip;
