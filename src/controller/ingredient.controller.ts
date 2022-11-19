@@ -13,13 +13,39 @@ export class IngredientController {
 
     @Get('items')
     async getIngredients(
-        @Query() pageOptions: PageOptionsDto,
+        @Query('dinner_id') dinnerId?: number,
+        @Query('style_id') styleId?: number,
+        @Query() pageOptions?: PageOptionsDto,
     ) {
-        const ingredients = this.ingredientService.getAllIngredients(pageOptions);
+        const ingredients = await this.ingredientService.getIngredientsBy({
+            dinnerId: dinnerId ? dinnerId : undefined,
+            styleId: styleId ? styleId : undefined,
+        }, pageOptions);
 
         if (!ingredients) throw new NotFoundException();
 
         return ingredients;
+    }
+
+    @Get('dinner/:dinnerId')
+    async getDinnerIngredients(
+        @Param('dinnerId') dinnerId: number,
+    ) {
+        const dIngredients = await this.ingredientService.getDinnerIngredients(dinnerId);
+
+        if(!dIngredients) throw new NotFoundException();
+
+        return dIngredients;
+    }
+    @Get('style/:styleId')
+    async getStyleIngredients(
+        @Param('styleId') styleId: number,
+    ) {
+        const dIngredients = await this.ingredientService.getStyleIngredients(styleId);
+
+        if(!dIngredients) throw new NotFoundException();
+
+        return dIngredients;
     }
 
     @Post('items')

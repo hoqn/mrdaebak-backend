@@ -23,6 +23,22 @@ export class IngredientService {
         return this.getIngredientsBy({}, pageOptions);
     }
 
+    async getDinnerIngredients(dinnerId: number) {
+        return await this.dataSource.getRepository(DinnerIngredient)
+            .find({
+                relations: { ingredient: true },
+                where: { dinnerId }
+            });
+    }
+
+    async getStyleIngredients(styleId: number) {
+        return await this.dataSource.getRepository(StyleIngredient)
+            .find({
+                relations: { ingredient: true },
+                where: { styleId }
+            });
+    }
+
     async getIngredientsBy(
         query: {
             ingredientName?: string,
