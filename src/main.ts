@@ -28,7 +28,7 @@ async function bootstrap() {
 
   const port = process.env.SERVER_PORT ?? CONFIG.serverPort ?? '3000';
   
-  await apiApp.listen(CONFIG.serverPort)
+  await apiApp.listen(port)
     .then(() => {
       console.info(`\n\n[*]  🎅  Mr.Daebak Backend 서버가 ${port}번 포트에서 시작됩니다.\n\n`);
     });

@@ -63,7 +63,7 @@ export class UserService {
     }
 
     async getUserByUserId(userId: string): Promise<User> {
-        return await this.userRepo.findOneBy({ userId: userId });
+        return await this.userRepo.findOneBy({ userId });
     }
 
     async updateUser(userId: string, dto: PatchUserDto) {
