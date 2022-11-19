@@ -132,10 +132,15 @@ export class OrderService {
             dinnerOptionId: ent.id,
             amount: ent.amount,
         });
+        orderDinner.dinnerAmount = dto.dinnerAmount;
 
-        orderDinner.totalDinnerPrice = await this.getPriceOfOrderDinner(orderDinner);
+        //orderDinner.totalDinnerPrice = await this.getPriceOfOrderDinner(orderDinner);
 
-        return this.orderDinnerRepo.save(orderDinner);
+        const result = await this.orderDinnerRepo.save(orderDinner);
+
+        await this.updatePriceOfOrder(orderDinner.orderId);
+
+        return await this.orderDinnerRepo.findOneBy({ orderDinnerId: result.orderDinnerId })
     }
 
     public async updateOrderDinner(orderDinnerId: number, dto: UpdateOrderDinnerDto) {
@@ -155,10 +160,15 @@ export class OrderService {
                 option.amount = ent.amount;
                 return option;
             });
+        if(dto.dinnerAmount !== undefined) orderDinner.dinnerAmount = dto.dinnerAmount;
 
-        orderDinner.totalDinnerPrice = await this.getPriceOfOrderDinner(orderDinner);
+        //orderDinner.totalDinnerPrice = await this.getPriceOfOrderDinner(orderDinner);
 
-        return this.orderDinnerRepo.save(orderDinner);
+        const result = this.orderDinnerRepo.save(orderDinner);
+
+        await this.updatePriceOfOrder(orderDinner.orderId);
+
+        return await this.orderDinnerRepo.findOneBy({ orderDinnerId: (await result).orderDinnerId });
     }
 
     public async deleteOrderDinner(orderDinnerId: number) {
@@ -167,7 +177,11 @@ export class OrderService {
             where: { orderDinnerId },
         });
         
-        return await this.orderDinnerRepo.delete(orderDinner);
+        const result = await this.orderDinnerRepo.delete(orderDinner);
+
+        await this.updatePriceOfOrder(orderDinner.orderId);
+
+        return result;
     }
 
     /**
@@ -263,7 +277,7 @@ export class OrderService {
         );
     }
 
-    private async updatePriceOfOrder(orderId: number) {
+    private async updatePriceOfOrder(orderId: number, updateOrderDinner: boolean = true) {
         const order = await this.orderRepo.findOne({
             relations: { orderDinners: { orderDinnerOptions: true }, user: true },
             where: { orderId },
@@ -272,7 +286,7 @@ export class OrderService {
         let price: number = 0;
 
         for(let od of order.orderDinners)
-            await this.getPriceOfOrderDinner(od)
+            await this.getPriceOfOrderDinner(od, updateOrderDinner)
                 .then(pr => {
                     od.totalDinnerPrice = pr;
                     price += pr;
@@ -293,7 +307,7 @@ export class OrderService {
      * @param orderDinner 
      * @returns 해당 OrderDinner의 가격
      */
-    private async getPriceOfOrderDinner(orderDinner: OrderDinner|number): Promise<number> {
+    private async getPriceOfOrderDinner(orderDinner: OrderDinner|number, updateToDb: boolean = true): Promise<number> {
         const od = await this.orderDinnerRepo.findOne({
             relations: {
                 orderDinnerOptions: {
@@ -314,6 +328,10 @@ export class OrderService {
         od.orderDinnerOptions.forEach(option => {
             price += option.dinnerOption.dinnerOptionPrice * option.amount;
         });
+
+        price *= od.dinnerAmount;
+
+        await this.orderDinnerRepo.update({orderDinnerId: od.orderDinnerId}, { totalDinnerPrice: price });
 
         return price;
     }

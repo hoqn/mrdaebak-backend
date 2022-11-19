@@ -47,6 +47,9 @@ class DinnerOptionIdMapEntity {
 
     @IsNumber()
     styleId: number;
+
+    @IsNumber()
+    dinnerAmount: number;
 }
 
 export class UpdateOrderDinnerDto extends PartialType(CreateOrderDinnerDto) { }
