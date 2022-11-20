@@ -11,7 +11,6 @@ import { Dinner } from "./Dinner";
 import { DinnerOption } from "./DinnerOption";
 import { Order } from "./Order";
 import { OrderDinnerOption } from "./OrderDinnerOption";
-import { SteakDonenessDegree } from "./SteakDonenessDegree";
 import { Style } from "./Style";
 
 @Entity("order_dinner")
@@ -40,10 +39,6 @@ export class OrderDinner {
   @ManyToOne(() => Order, (order) => order.orderDinners)
   @JoinColumn({ name: "order_id", referencedColumnName: "orderId" })
   order: Order;
-
-  @ManyToOne(() => SteakDonenessDegree)
-  @JoinColumn({ name: "degree_id", referencedColumnName: "degreeId" })
-  degree: SteakDonenessDegree;
 
   // Relations
 

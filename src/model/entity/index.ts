@@ -7,7 +7,6 @@ export * from "./IngredientCategory";
 
 export * from "./Order";
 export * from "./OrderDinner";
-export * from "./SteakDonenessDegree";
 
 export * from "./Style";
 export * from "./StyleOption";

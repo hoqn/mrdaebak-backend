@@ -5,7 +5,7 @@ import { AuthModule, CartModule, MenuModule, OrderModule, StoreModule, UserModul
 
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
 import { CONFIG } from './config';
-import { Dinner, DinnerIngredient, DinnerOption, Ingredient, IngredientCategory, Order, OrderDinner, Staff, SteakDonenessDegree, Style, StyleIngredient, StyleOption, User } from './model/entity';
+import { Dinner, DinnerIngredient, DinnerOption, Ingredient, IngredientCategory, Order, OrderDinner, Staff, Style, StyleIngredient, StyleOption, User } from './model/entity';
 import { OrderDinnerOption } from './model/entity/OrderDinnerOption';
 import { IngredientModule } from './module/ingredient.module';
 
@@ -18,7 +18,7 @@ const typeOrmConfig = <TypeOrmModuleOptions>{
     Ingredient, IngredientCategory,
     Order, OrderDinner, OrderDinnerOption,
     Staff, User,
-    SteakDonenessDegree, //DinnerStyle,
+    //DinnerStyle,
   ],
   namingStrategy: new SnakeNamingStrategy(),
   timezone: 'local',
