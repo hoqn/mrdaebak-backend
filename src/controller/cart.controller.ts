@@ -3,7 +3,7 @@ import { Order } from "@/model/entity";
 import { BaseAuthGuard, ExclusiveOrRoleGuard } from "@/security/guard";
 import { SecurityRoles } from "@/security/role.decorator";
 import { OrderService } from "@/service/order.service";
-import { BadRequestException, Body, Controller, Get, HttpException, HttpStatus, InternalServerErrorException, NotFoundException, Param, Patch, Post, Res, SetMetadata, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, HttpException, HttpStatus, InternalServerErrorException, NotFoundException, Param, Patch, Post, Res, SetMetadata, UseGuards } from "@nestjs/common";
 import { Response } from "express";
 
 @Controller('cart')
@@ -51,5 +51,18 @@ export class CartController {
         const result = await this.orderService.updateOrder(cart.orderId, body);
 
         return result;
+    }
+
+    @Delete(':userId/:orderDinnerId')
+    async deleteCartItem(
+        @Param('userId') userId: string,
+        @Param('orderDinnerId') orderDinnerId: number,
+    ) {
+        const cart = await this.orderService.getOrCreateCart(userId);
+        const orderDinner = await this.orderService.getOrderDinnerById(orderDinnerId, cart.orderId);
+
+        if(!orderDinner) throw new NotFoundException();
+
+        return await this.orderService.deleteOrderDinner(orderDinnerId);
     }
 }
