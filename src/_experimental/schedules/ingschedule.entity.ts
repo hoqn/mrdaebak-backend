@@ -15,8 +15,8 @@ export class IngSchedule {
     @Column('int', { name: 'order_amount', default: 0 })
     public orderAmount: number;
 
-    @Column('int', { name: 'delivered_amount', default: 0 })
-    public deliveredAmount: number;
+    @Column('int', { name: 'in_amount', default: 0 })
+    public inAmount: number;
 
     @Column('int', { name: 'out_amount', default: 0 })
     public outAmount: number;
