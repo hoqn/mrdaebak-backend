@@ -23,7 +23,10 @@ export class AuthController {
 
         if (!token) throw new UnauthorizedException();
 
-        return { 'access-token': token };
+        return {
+            'userId': dto.userId,
+            'access-token': token,
+        };
     }
 
     @Post('staff')
@@ -40,9 +43,12 @@ export class AuthController {
 
         if (!token) throw new UnauthorizedException();
 
-        return { 'access-token': token };
+        return {
+            'staffId': dto.staffId,
+            'access-token': token,
+        };
     }
-    
+
     @Delete('users')
     logoutUser(
         @Res() res: Response,
