@@ -8,7 +8,7 @@ import { OrderState, UserGrade } from "@/model/enum";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectDataSource, InjectRepository } from "@nestjs/typeorm";
 import { isDate, isNotEmpty, isNumberString, isPhoneNumber, isString } from "class-validator";
-import moment from "moment";
+import * as moment from "moment";
 import { DataSource, DeleteResult, FindOptionsOrder, Not, QueryBuilder, Repository, UpdateQueryBuilder, UpdateResult } from "typeorm";
 import { IngredientService } from "./ingredient.service";
 import { MenuService } from "./menu.service";
@@ -127,11 +127,15 @@ export class OrderService {
         orderDinner.dinnerId = dto.dinnerId;
         orderDinner.styleId = dto.styleId;
         orderDinner.degreeId = dto.degreeId;
-        orderDinner.orderDinnerOptions = dto.dinnerOptionIds.map(ent => <OrderDinnerOption>{
-            orderDinnerId: orderId,
-            dinnerOptionId: ent.id,
-            amount: ent.amount,
-        });
+        orderDinner.orderDinnerOptions = [];
+        for(let option of dto.dinnerOptionIds) {
+            if(option.amount < 1) continue;
+            
+            orderDinner.orderDinnerOptions.push(<OrderDinnerOption>{
+                dinnerOptionId: option.id,
+                amount: option.amount,
+            });
+        }
         orderDinner.dinnerAmount = dto.dinnerAmount;
 
         //orderDinner.totalDinnerPrice = await this.getPriceOfOrderDinner(orderDinner);
