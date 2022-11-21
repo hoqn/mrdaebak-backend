@@ -69,6 +69,9 @@ export class Ingredient {
 
   public static readonly CURRENT_STOCK_CALC_QUERY = 'prev_stock + today_arrived - today_out';
 
+  @Column("int", { default: 0 })
+  stock: number;
+
   /**
    * 발주 수량: 발주되어 배송을 기다리는 양
    */

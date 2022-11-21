@@ -34,7 +34,7 @@ export class OrderController {
     async getOrder(
         @Param('orderId') orderId: number,
     ) {
-        const order = await this.orderService.getOrderById(orderId, true);
+        const order = await this.orderService.getOrder(orderId, true);
 
         if(!order) throw new NotFoundException();
 
@@ -58,7 +58,7 @@ export class OrderController {
         @Param('orderId') orderId: number,
         @Param('orderDinnerId') orderDinnerId: number,
     ) {
-        const orderDinner = await this.orderService.getOrderDinnerById(orderDinnerId, orderId);
+        const orderDinner = await this.orderService.getOrderDinner(orderDinnerId, orderId);
 
         if(!orderDinner) throw new NotFoundException();
         return orderDinner;

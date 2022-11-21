@@ -18,29 +18,29 @@ const DISCOUNT_VIP = 10000;
 
 @Injectable()
 export class OrderService {
+    
     constructor(
-        private readonly menuService: MenuService,
-        private readonly userService: UserService,
-        private readonly ingredientService: IngredientService,
         @InjectRepository(Order) private readonly orderRepo: Repository<Order>,
         @InjectRepository(OrderDinner) private readonly orderDinnerRepo: Repository<OrderDinner>,
         @InjectRepository(DinnerOption) private readonly dinnerOptionRepo: Repository<DinnerOption>,
         @InjectDataSource() private readonly dataSource: DataSource,
+        private readonly menuService: MenuService,
+        private readonly userService: UserService,
+        private readonly ingredientService: IngredientService,
         private readonly staffAlarm: StaffAlarmEventGateway,
     ) { }
 
+    /**
+     * Order
+     */
+    
     public async getOrderCounts(){
         const qb = this.orderRepo.createQueryBuilder('o')
             .select('o.order_state, COUNT(o.order_id) as amount')
             .where({ orderState: Not(OrderState.CART) })
             .groupBy('o.order_state');
-
         return await qb.execute();
     }
-
-    /**
-     * Order
-     */
 
     public async getAllOrders(pageOptions: PageOptionsDto) {
         return this.getOrdersBy({}, pageOptions);
@@ -77,7 +77,7 @@ export class OrderService {
         return new PageResultDto(pageOptions, count, items);
     }
 
-    public async getOrderById(orderId: number, widen: boolean = false) {
+    public async getOrder(orderId: number, widen: boolean = false) {
         return this.orderRepo.findOne({
             relations: {
                 orderDinners: widen ? {
@@ -89,32 +89,24 @@ export class OrderService {
     }
 
     public async updateOrder(orderId: number, body: UpdateOrderMetaDto) {
-        const qb = this.orderRepo.createQueryBuilder()
-            .update()
-            .where({ orderId });
-
-        qb.set({
-            ...body
-        });
-
-        return qb.execute();
+        return this.orderRepo.update(
+            { orderId },
+            { ...body },
+        );
     }
 
     public async setOrderState(orderId: number, state: OrderState) {
-        const qb = this.orderRepo.createQueryBuilder('o')
-            .update()
-            .where({ orderId });
-
-        qb.set({ orderState: state });
-
-        return qb.execute();
+        return this.orderRepo.update(
+            { orderId },
+            { orderState: state },
+        );
     }
 
     /**
      * ORDERDINNER
      */
 
-    public async getOrderDinnerById(orderDinnerId: number, orderId?: number) {
+    public async getOrderDinner(orderDinnerId: number, orderId?: number) {
         return this.orderDinnerRepo.findOne({
             relations: { orderDinnerOptions: true }, 
             where: { orderDinnerId, orderId },
@@ -122,6 +114,7 @@ export class OrderService {
     }
 
     public async addOrderDinner(orderId: number, dto: CreateOrderDinnerDto) {
+<<<<<<< Updated upstream
         const orderDinner = new OrderDinner();
         orderDinner.orderId = orderId;
         orderDinner.dinnerId = dto.dinnerId;
@@ -132,6 +125,26 @@ export class OrderService {
             dinnerOptionId: ent.id,
             amount: ent.amount,
         });
+=======
+        const orderDinner = <OrderDinner> {
+            orderId,
+            dinnerId: dto.dinnerId,
+            styleId: dto.styleId,
+            degreeId: dto.degreeId,
+            dinnerAmount: dto.dinnerAmount,
+            orderDinnerOptions: [],
+        };
+
+        for(let option of dto.dinnerOptionIds) {
+            if(option.amount < 1) continue;
+            orderDinner.orderDinnerOptions.push(<OrderDinnerOption> {
+                dinnerOptionId: option.id,
+                amount: option.amount,
+            });
+        }
+
+        const result = await this.orderDinnerRepo.save(orderDinner);
+>>>>>>> Stashed changes
 
         orderDinner.totalDinnerPrice = await this.getPriceOfOrderDinner(orderDinner);
 
@@ -147,6 +160,7 @@ export class OrderService {
         if(dto.dinnerId !== undefined) orderDinner.dinnerId = dto.dinnerId;
         if(dto.styleId !== undefined) orderDinner.styleId = dto.styleId;
         if(dto.degreeId !== undefined) orderDinner.degreeId = dto.degreeId;
+        if(dto.dinnerAmount !== undefined) orderDinner.dinnerAmount = dto.dinnerAmount;
         if(dto.dinnerOptionIds !== undefined)
             orderDinner.orderDinnerOptions = dto.dinnerOptionIds.map(ent => {
                 const option = new OrderDinnerOption();
@@ -203,12 +217,12 @@ export class OrderService {
         (async () => {
             if (result && result.affected > 0) {
                 // 실시간 알림 보냄
-                const order = await this.getOrderById(cart.orderId, true);
+                const order = await this.getOrder(cart.orderId, true);
                 this.staffAlarm.notifyNewOrder(order);
             }
         })();
 
-        return { ...await this.getOrderById(cart.orderId, true), becomeVip: becomeVip };
+        return { ...await this.getOrder(cart.orderId, true), becomeVip: becomeVip };
     }
 
     /**

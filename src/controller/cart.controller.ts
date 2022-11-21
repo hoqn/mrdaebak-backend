@@ -52,4 +52,35 @@ export class CartController {
 
         return result;
     }
+<<<<<<< Updated upstream
+=======
+
+    @Delete(':userId/:orderDinnerId')
+    async deleteCartItem(
+        @Param('userId') userId: string,
+        @Param('orderDinnerId') orderDinnerId: number,
+    ) {
+        const cart = await this.orderService.getOrCreateCart(userId);
+        const orderDinner = await this.orderService.getOrderDinner(orderDinnerId, cart.orderId);
+
+        if(!orderDinner) throw new NotFoundException();
+
+        return await this.orderService.deleteOrderDinner(orderDinnerId);
+    }
+    
+    @Put(':userId/:orderDinnerId')
+    async updateCartItem(
+        @Param('userId') userId: string,
+        @Param('orderDinnerId') orderDinnerId: number,
+        @Body() body: UpdateOrderDinnerDto,
+    ) {
+        const cart = await this.orderService.getOrCreateCart(userId);
+        const orderDinner = await this.orderService.getOrderDinner(orderDinnerId, cart.orderId);
+
+        if(!orderDinner) throw new NotFoundException();
+
+        return await this.orderService.updateOrderDinner(orderDinner.orderDinnerId, body);
+    }
+
+>>>>>>> Stashed changes
 }
