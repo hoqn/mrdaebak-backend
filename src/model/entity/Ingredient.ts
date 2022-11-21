@@ -75,6 +75,9 @@ export class Ingredient {
   @Column("int", { default: 0 })
   orderedNumber: number;
 
+  @Column("int", { default: 0 })
+  orderedPrice: number;
+
   // Relations
   
   @ManyToOne(() => IngredientCategory, o => o.ingredients )
