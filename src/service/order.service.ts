@@ -114,18 +114,6 @@ export class OrderService {
     }
 
     public async addOrderDinner(orderId: number, dto: CreateOrderDinnerDto) {
-<<<<<<< Updated upstream
-        const orderDinner = new OrderDinner();
-        orderDinner.orderId = orderId;
-        orderDinner.dinnerId = dto.dinnerId;
-        orderDinner.styleId = dto.styleId;
-        orderDinner.degreeId = dto.degreeId;
-        orderDinner.orderDinnerOptions = dto.dinnerOptionIds.map(ent => <OrderDinnerOption>{
-            orderDinnerId: orderId,
-            dinnerOptionId: ent.id,
-            amount: ent.amount,
-        });
-=======
         const orderDinner = <OrderDinner> {
             orderId,
             dinnerId: dto.dinnerId,
@@ -144,7 +132,6 @@ export class OrderService {
         }
 
         const result = await this.orderDinnerRepo.save(orderDinner);
->>>>>>> Stashed changes
 
         orderDinner.totalDinnerPrice = await this.getPriceOfOrderDinner(orderDinner);
 

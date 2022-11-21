@@ -34,6 +34,9 @@ export class OrderDinner {
   @Column("int")
   styleId: number;
 
+  @Column("int")
+  dinnerAmount: number;
+
   @ManyToOne(() => Order, (order) => order.orderDinners)
   @JoinColumn({ name: "order_id", referencedColumnName: "orderId" })
   order: Order;

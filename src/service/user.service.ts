@@ -67,23 +67,17 @@ export class UserService {
     }
 
     async updateUser(userId: string, dto: PatchUserDto) {
-        /*const user = await this.userRepo.findOneBy({userId});
+        const user = await this.userRepo.findOneBy({userId});
 
-        if(dto.userName) user.userName = dto.userName;
-        if(dto.address) user.address = dto.address;
-        if(dto.phoneNumber) user.phoneNumber = dto.address;
-        if(dto.cardNumber) user.cardNumber = dto.cardNumber;
+        if(dto.userName !== undefined) user.userName = dto.userName;
+        if(dto.address !== undefined) user.address = dto.address;
+        if(dto.phoneNumber !== undefined) user.phoneNumber = dto.address;
+        if(dto.cardNumber !== undefined) user.cardNumber = dto.cardNumber;
         
-        if(dto.password)
+        if(dto.password !== undefined)
             user.password = PasswordEncryptor.encrypt(dto.password);
 
-        await this.userRepo.save(user);*/
-        const qb = this.userRepo.createQueryBuilder()
-            .update();
-        
-        qb.set(dto);
-
-        return await qb.execute();
+        return await this.userRepo.save(user);
     }
 
     async deleteUser(userId: string) {

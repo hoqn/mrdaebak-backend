@@ -4,7 +4,7 @@
 
 export default {
     serverPort: 8080,
-    socketPort: 1111,
+    socketPort: 1080,
     db: {
         type: 'mariadb',
         host: 'localhost',

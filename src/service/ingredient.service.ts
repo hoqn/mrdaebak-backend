@@ -175,7 +175,6 @@ export class IngredientService {
         const order = await this.dataSource.getRepository(Order)
             .findOneBy({ orderId });
 
-<<<<<<< Updated upstream
         const date = order.rsvDate;
         const ingredients = await this.calculateIngredientStockForOrder(orderId, async (ingredientId, addAmount) => {
             await this.ingScheduleService.pushRsvAmount(date, ingredientId, addAmount);
@@ -184,9 +183,6 @@ export class IngredientService {
         return true;
 
         /*for(let [ingredientId, amount] of ingredients.entries()) {
-=======
-        for (let [ingredientId, amount] of ingredients.entries()) {
->>>>>>> Stashed changes
             const { currentStock } = await this.ingredientRepo.findOne({
                 select: { currentStock: true },
                 where: { ingredientId },
@@ -197,12 +193,7 @@ export class IngredientService {
         }
 
         // 가능
-<<<<<<< Updated upstream
         for(let [ingredientId, amount] of ingredients.entries()) {
-=======
-
-        for (let [ingredientId, amount] of ingredients.entries()) {
->>>>>>> Stashed changes
             await this.ingredientRepo.update({ ingredientId }, {
                 todayOut: () => `today_out - ${amount}`
             });
@@ -218,13 +209,8 @@ export class IngredientService {
             where: { orderId }
         });
 
-<<<<<<< Updated upstream
         const addIng = async (ingredientId: number, addAmount: number) => {
             if(ingredients.has(ingredientId)) ingredients[ingredientId] = 0;
-=======
-        const addIng = (ingredientId: number, addAmount: number) => {
-            if (ingredients[ingredientId] === undefined) ingredients[ingredientId] = 0;
->>>>>>> Stashed changes
             ingredients[ingredientId] += addAmount;
 
             if(addHook)
@@ -249,13 +235,8 @@ export class IngredientService {
                 relations: { dinnerOption: true },
                 where: { orderDinnerId: orderDinner.orderDinnerId }
             });
-<<<<<<< Updated upstream
             for(let orderOption of orderOptions) {
                 await addIng(orderOption.dinnerOption.ingredientId, orderOption.dinnerOption.ingredientAmount);
-=======
-            for (let orderOption of orderOptions) {
-                addIng(orderOption.dinnerOption.ingredientId, orderOption.dinnerOption.ingredientAmount);
->>>>>>> Stashed changes
             }
         }
 
@@ -326,7 +307,7 @@ export class IngredientService {
             this.setCurrentStockQuery(ingredientQuery, amount, 'add');
         } else if(field === 'out') {
             ingredientQuery.set({
-                currentStock:  
+                //currentStock:  
             });
         }
     }

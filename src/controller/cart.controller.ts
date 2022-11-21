@@ -1,9 +1,9 @@
-import { CreateOrderDinnerDto, UpdateOrderMetaDto } from "@/model/dto/order.dto";
+import { CreateOrderDinnerDto, UpdateOrderDinnerDto, UpdateOrderMetaDto } from "@/model/dto/order.dto";
 import { Order } from "@/model/entity";
 import { BaseAuthGuard, ExclusiveOrRoleGuard } from "@/security/guard";
 import { SecurityRoles } from "@/security/role.decorator";
 import { OrderService } from "@/service/order.service";
-import { BadRequestException, Body, Controller, Get, HttpException, HttpStatus, InternalServerErrorException, NotFoundException, Param, Patch, Post, Res, SetMetadata, UseGuards } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, Get, HttpException, HttpStatus, InternalServerErrorException, NotFoundException, Param, Patch, Post, Put, Res, SetMetadata, UseGuards } from "@nestjs/common";
 import { Response } from "express";
 
 @Controller('cart')
@@ -52,8 +52,6 @@ export class CartController {
 
         return result;
     }
-<<<<<<< Updated upstream
-=======
 
     @Delete(':userId/:orderDinnerId')
     async deleteCartItem(
@@ -82,5 +80,4 @@ export class CartController {
         return await this.orderService.updateOrderDinner(orderDinner.orderDinnerId, body);
     }
 
->>>>>>> Stashed changes
 }
