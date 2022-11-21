@@ -67,7 +67,7 @@ export class UserService {
     }
 
     async updateUser(userId: string, dto: PatchUserDto) {
-        /*const user = await this.userRepo.findOneBy({userId});
+        const user = await this.userRepo.findOneBy({userId});
 
         if(dto.userName) user.userName = dto.userName;
         if(dto.address) user.address = dto.address;
@@ -77,13 +77,7 @@ export class UserService {
         if(dto.password)
             user.password = PasswordEncryptor.encrypt(dto.password);
 
-        await this.userRepo.save(user);*/
-        const qb = this.userRepo.createQueryBuilder()
-            .update();
-        
-        qb.set(dto);
-
-        return await qb.execute();
+        await this.userRepo.save(user);
     }
 
     async deleteUser(userId: string) {
