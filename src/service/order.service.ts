@@ -178,11 +178,11 @@ export class OrderService {
 
     public async deleteOrderDinner(orderDinnerId: number) {
         const orderDinner = await this.orderDinnerRepo.findOne({
-            relations: { order: true },
+        //    relations: { order: true },
             where: { orderDinnerId },
         });
         
-        const result = await this.orderDinnerRepo.delete(orderDinner);
+        const result = await this.orderDinnerRepo.delete({ orderDinnerId });
 
         await this.updatePriceOfOrder(orderDinner.orderId);
 

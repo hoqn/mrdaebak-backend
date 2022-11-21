@@ -1,5 +1,6 @@
 import { CONFIG } from "@/config";
 import {
+  AfterLoad,
   Column,
   Entity, JoinColumn,
   ManyToMany,
@@ -75,8 +76,14 @@ export class Ingredient {
   @Column("int", { default: 0 })
   orderedNumber: number;
 
-  @Column("int", { default: 0 })
-  orderedPrice: number;
+  //@Column("int", { default: 0 })
+  protected orderedPrice: number;
+
+  
+  @AfterLoad()
+  calcOrderedPrice() {
+    this.orderedPrice = this.orderedNumber * this.ingredientPrice;
+  };
 
   // Relations
   
