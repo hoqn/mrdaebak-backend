@@ -59,7 +59,7 @@ export class CartController {
         @Param('orderDinnerId') orderDinnerId: number,
     ) {
         const cart = await this.orderService.getOrCreateCart(userId);
-        const orderDinner = await this.orderService.getOrderDinnerById(orderDinnerId, cart.orderId);
+        const orderDinner = await this.orderService.getOrderDinner(orderDinnerId, cart.orderId);
 
         if(!orderDinner) throw new NotFoundException();
 
@@ -73,7 +73,7 @@ export class CartController {
         @Body() body: UpdateOrderDinnerDto,
     ) {
         const cart = await this.orderService.getOrCreateCart(userId);
-        const orderDinner = await this.orderService.getOrderDinnerById(orderDinnerId, cart.orderId);
+        const orderDinner = await this.orderService.getOrderDinner(orderDinnerId, cart.orderId);
 
         if(!orderDinner) throw new NotFoundException();
 

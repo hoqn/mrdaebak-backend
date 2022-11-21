@@ -52,14 +52,14 @@ export class IngredientController {
     async postIngredient(
         @Body() body: CreateIngredientReq,
     ) {
-        return await this.ingredientService.addNewIngredient(body);
+        return await this.ingredientService.createIngredient(body);
     }
 
     @Get('items/:ingredientId')
     async getIngredient(
         @Param('ingredientId') ingredientId: number,
     ) {
-        return this.ingredientService.getIngredientById(ingredientId);
+        return this.ingredientService.getIngredient(ingredientId);
     }
 
     @Patch('items/:ingredientId')

@@ -77,7 +77,7 @@ export class UserService {
         if(dto.password)
             user.password = PasswordEncryptor.encrypt(dto.password);
 
-        await this.userRepo.save(user);
+        return await this.userRepo.save(user);
     }
 
     async deleteUser(userId: string) {
