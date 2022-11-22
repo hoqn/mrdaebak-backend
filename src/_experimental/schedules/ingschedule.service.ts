@@ -97,15 +97,15 @@ export class IngScheduleService {
             .getCount();
 
         if (ingSch === 0) {
-            const values = { date, ingredientId, [field]: amount };
-            return await this.ingScheduleRepo.createQueryBuilder()
-                .insert()
-                .values(values)
-                .execute();
+            return await this.ingScheduleRepo.query(`
+                INSERT
+                INTO ing_schedule
+                ( date, ingredient_id, ${field} ) VALUES ( ${dateString}, ${ingredientId}, ${amount} );
+            `);
         } else {
             return await this.ingScheduleRepo.query(`
                 UPDATE ing_schedule
-                SET ${field} = ${field} + ${amount}
+                SET ${field} = ${ mode === 'set' ? amount : `${field} + ${amount}` }
                 WHERE date = '${dateString}' AND ingredient_id = ${ingredientId}
             `);
         }
