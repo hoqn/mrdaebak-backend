@@ -66,7 +66,7 @@ export class CartController {
         return await this.orderService.deleteOrderDinner(orderDinnerId);
     }
     
-    @Put(':userId/:orderDinnerId')
+    @Patch(':userId/:orderDinnerId')
     async updateCartItem(
         @Param('userId') userId: string,
         @Param('orderDinnerId') orderDinnerId: number,
