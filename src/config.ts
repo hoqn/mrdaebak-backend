@@ -84,6 +84,9 @@ const defaultConfig: Config = {
     }
 };
 
-import appConfig from "../app.config";
+import config from '../app.config';
+import config_s from '../app.config.s';
 
-export const CONFIG: Config = { ...defaultConfig, ...appConfig };
+const c = process.env.EXPERIMENTAL ? config_s : config;
+
+export const CONFIG: Config = { ...defaultConfig, ...c };
