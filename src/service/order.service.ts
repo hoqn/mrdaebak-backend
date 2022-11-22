@@ -239,6 +239,8 @@ export class OrderService {
     }
 
     private async getCart(userId: string): Promise<Order> {
+        if(!userId) return null;
+
         let order = await this.orderRepo.findOne({
             relations: {
                 orderDinners: { orderDinnerOptions: true }
