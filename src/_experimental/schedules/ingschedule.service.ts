@@ -1,44 +1,113 @@
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import * as moment from "moment";
-import { Repository } from "typeorm";
+import { Between, Repository } from "typeorm";
 import { IngSchedule } from "./ingschedule.entity";
+
+type SET_MODE = 'add' | 'set';
 
 @Injectable()
 export class IngScheduleService {
     constructor(
         @InjectRepository(IngSchedule) private readonly ingScheduleRepo: Repository<IngSchedule>,
-    ) {}
+    ) { }
 
     public async getIngSchedule(dateRange: [Date, Date], ingredientId?: number) {
-        console.log('TIME ', dateRange[0]);
-        return await this.ingScheduleRepo.createQueryBuilder('is')
-            .where({ ingredientId })
-            .andWhere('date >= :from AND date <= :to', {from: dateRange[0].toISOString(), to: dateRange[1].toISOString()})
+        const qb = this.ingScheduleRepo.createQueryBuilder()
+
+        if (ingredientId !== undefined) qb.where({ ingredientId });
+
+        return await qb
+            .andWhere(`date >= '${moment(dateRange[0]).format('yyyy-MM-DD')}'`)
+            .andWhere(`date <= '${moment(dateRange[1]).format('yyyy-MM-DD')}'`)
             .getMany();
     }
 
-    public async pushRsvAmount(date: Date, ingredientId: number, addAmount: number) {
-        console.log(`ID: ${ingredientId}`);
-        const exist = await this.ingScheduleRepo.createQueryBuilder()
-            .where(`ingredient_id = :id AND date = :date`, {
-                date: moment(date).format('YYYY-MM-DD'),
-                id: ingredientId,
-            })
-            .getOne();
+    public async getIngScheduleGroupByDate(dateRange: [Date, Date], ingredientId?: number) {
+        let result: any[] = [];
 
-        //console.log(exist);
+        const toMoment = moment(dateRange[1]);
 
-        if(exist) {
-            return await this.ingScheduleRepo.update({ date, ingredientId }, {
-                rsvAmount: () => addAmount >= 0 ? `rsv_amount + ${addAmount}` : `rsv_amount - ${-addAmount}`
+        for (let date = moment(dateRange[0]); date.isSameOrBefore(toMoment); date.add(1, 'days')) {
+            const dateString = moment(date).format('yyyy-MM-DD');
+            const qb = this.ingScheduleRepo.createQueryBuilder();
+
+            if (ingredientId !== undefined)
+                qb.where({ ingredientId });
+
+            const items: any[] = await qb
+                .andWhere('date = :date', { date: dateString })
+                .select('ingredient_id as ingredientId')
+                .addSelect('rsv_amount as rsvAmount')
+                .addSelect('in_amount as inAmount')
+                .addSelect('out_amount as outAmount')
+                .addSelect('order_amount as orderAmount')
+                .execute();
+
+            result.push({
+                date: dateString,
+                items: items,
             });
-        } else {
-            return await this.ingScheduleRepo.insert({
-                date,
-                ingredientId,
-                rsvAmount: addAmount,
+        }
+
+        return result;
+    }
+
+    // Update
+
+    public async setInAmount(date: Date, ingredientId: number, amount: number, mode: SET_MODE) {
+        this.setAmount(date, 'in_amount', ingredientId, amount, mode);
+    }
+
+    public async setOutAmount(date: Date, ingredientId: number, amount: number, mode: SET_MODE) {
+        this.setAmount(date, 'out_amount', ingredientId, amount, mode);
+    }
+
+    public async setRsvAmount(date: Date, ingredientId: number, amount: number, mode: SET_MODE) {
+        this.setAmount(date, 'rsv_amount', ingredientId, amount, mode);
+    }
+
+    public async setOrderAmount(date: Date, ingredientId: number, amount: number, mode: SET_MODE) {
+        this.setAmount(date, 'order_amount', ingredientId, amount, mode);
+    }
+
+    public async getOrderAmountByOrderDate(date: Date) {
+        return await this.ingScheduleRepo.createQueryBuilder()
+            .where(`date = :date`)
+            .setParameter('date', moment(date).format('yyyy-MM-DD'))
+            .getMany()
+            .then(result =>
+                result.map(r => <object>{ ingredientId: r.ingredientId, orderAmount: r.orderAmount })
+            );
+    }
+
+    public async getOrderAmountByDeliveredDate(date: Date) {
+        throw new Error("개발 중");
+    }
+
+    private async setAmount(date: Date, field: 'rsv_amount' | 'in_amount' | 'out_amount' | 'order_amount', ingredientId: number, amount: number, mode: SET_MODE) {
+        const dateString = moment(date).format('yyyy-MM-DD');
+
+        const ingSch = await this.ingScheduleRepo.createQueryBuilder()
+            .where('date = :date AND ingredient_id = :ingredientId')
+            .setParameters({
+                date: dateString,
+                ingredientId: ingredientId,
             })
+            .getCount();
+
+        if (ingSch === 0) {
+            const values = { date, ingredientId, [field]: amount };
+            return await this.ingScheduleRepo.createQueryBuilder()
+                .insert()
+                .values(values)
+                .execute();
+        } else {
+            return await this.ingScheduleRepo.query(`
+                UPDATE ing_schedule
+                SET ${field} = ${field} + ${amount}
+                WHERE date = '${dateString}' AND ingredient_id = ${ingredientId}
+            `);
         }
     }
 }

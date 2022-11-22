@@ -187,38 +187,6 @@ export class IngredientService {
 
     // Stock Application
 
-    async safeDecreaseIngredientStockForOrder(orderId: number): Promise<boolean> {
-        const order = await this.dataSource.getRepository(Order)
-            .findOneBy({ orderId });
-
-        const date = order.rsvDate;
-        const ingredients = await this.calculateIngredientStockForOrder(orderId, async (ingredientId, addAmount) => {
-            await this.ingScheduleService.pushRsvAmount(date, ingredientId, addAmount);
-        });
-
-        return true;
-
-        /*for(let [ingredientId, amount] of ingredients.entries()) {
-            const { currentStock } = await this.ingredientRepo.findOne({
-                select: { currentStock: true },
-                where: { ingredientId },
-            });
-
-            if (currentStock - amount < 0)
-                return false; // 불가
-        }
-
-        // 가능
-
-        for (let [ingredientId, amount] of ingredients.entries()) {
-            await this.ingredientRepo.update({ ingredientId }, {
-                todayOut: () => `today_out - ${amount}`
-            });
-        }
-
-        return true;*/
-    }
-
     async calculateIngredientStockForOrder(orderId: number, addHook?: (ingredientId: number, addAmount: number) => Promise<void>) {
         const ingredients: Map<number, number> = new Map();
 
@@ -227,58 +195,72 @@ export class IngredientService {
         });
 
         const addIng = async (ingredientId: number, addAmount: number) => {
-            if(ingredients.has(ingredientId)) ingredients[ingredientId] = 0;
-            ingredients[ingredientId] += addAmount;
+            ingredients.set(ingredientId,
+                ingredients.has(ingredientId)
+                    ? ingredients.get(ingredientId) + addAmount
+                    : addAmount
+            );
 
-            if(addHook)
+            if (addHook)
                 await addHook(ingredientId, addAmount);
         }
 
         for (let orderDinner of orderDinners) {
+
             // Dinner
-            const di = await this.dataSource.getRepository(DinnerIngredient).findOneBy({
+            const dis = await this.dataSource.getRepository(DinnerIngredient).findBy({
                 dinnerId: orderDinner.dinnerId
             });
-            await addIng(di.ingredientId, di.amount);
+            for (let di of dis) {
+                await addIng(di.ingredientId, di.amount);
+            }
 
             // Style
-            const si = await this.dataSource.getRepository(StyleIngredient).findOneBy({
+            const sis = await this.dataSource.getRepository(StyleIngredient).findBy({
                 styleId: orderDinner.styleId
             });
-            await addIng(si.ingredientId, si.amount);
+            for (let si of sis) {
+                await addIng(si.ingredientId, si.amount);
+            }
 
             // Options
             const orderOptions = await this.dataSource.getRepository(OrderDinnerOption).find({
                 relations: { dinnerOption: true },
                 where: { orderDinnerId: orderDinner.orderDinnerId }
             });
-            for(let orderOption of orderOptions) {
-                await addIng(orderOption.dinnerOption.ingredientId, orderOption.dinnerOption.ingredientAmount);
+            for (let orderOption of orderOptions) {
+                await addIng(orderOption.dinnerOption.ingredientId, orderOption.dinnerOption.ingredientAmount * orderOption.amount);
             }
         }
 
         return ingredients;
     }
 
-
-
-
-
-
-
-
     /**
      * Stock Management - CurrentStock
      */
 
     // 주의해서 사용
-    public async setCurrentStock(ingredientId: number, amount: number, mode: SET_MODE) {
-        return this.setCurrentStockQuery(undefined, amount, mode)
+    public async setStock(ingredientId: number, amount: number, mode: SET_MODE) {
+        return this.setStockQuery(undefined, amount, mode)
             .where({ ingredientId })
             .execute();
     }
 
-    private setCurrentStockQuery(queryBuilder: UpdateQueryBuilder<Ingredient> | undefined, amount: number, mode: SET_MODE) {
+    public async getStock(ingredientId: number) {
+        return this.ingredientRepo.findOne({
+            select: ['ingredientId', 'stock'],
+            where: { ingredientId }
+        });
+    }
+
+    public async getStocks() {
+        return this.ingredientRepo.find({
+            select: ['ingredientId', 'stock']
+        });
+    }
+
+    private setStockQuery(queryBuilder: UpdateQueryBuilder<Ingredient> | undefined, amount: number, mode: SET_MODE) {
         const qb = queryBuilder ? queryBuilder : this.ingredientRepo.createQueryBuilder().update();
         return qb.set({
             currentStock: mode === 'set'
@@ -292,41 +274,66 @@ export class IngredientService {
      */
 
     public async setRsvAmount(ingredientId: number, amount: number, mode: SET_MODE) {
-
+        return this.setAmount(ingredientId, 'rsv', amount, mode);
     }
 
     public async setOutAmount(ingredientId: number, amount: number, mode: SET_MODE) {
-
+        return this.setAmount(ingredientId, 'out', amount, mode);
     }
 
     public async setInAmount(ingredientId: number, amount: number, mode: SET_MODE) {
-
+        return this.setAmount(ingredientId, 'in', amount, mode);
     }
 
     public async setOrderAmount(ingredientId: number, amount: number, mode: SET_MODE) {
+        return this.setAmount(ingredientId, 'order', amount, mode);
+    }
 
+    public async getOrderAmountByOrderDate(date: Date) {
+        return await this.ingScheduleService.getOrderAmountByOrderDate(date);
     }
 
     private async setAmount(ingredientId: number, field: 'in' | 'out' | 'rsv' | 'order', amount: number, mode: SET_MODE) {
-        const ingredientQuery = this.ingredientRepo.createQueryBuilder('ing')
+        const ingredientQuery = this.ingredientRepo.createQueryBuilder()
             .update().where({ ingredientId });
 
         if (field === 'in') {
-            if(mode === 'set') {
-                const { currentStock } = await this.ingredientRepo.findOne({
-                    select: ['currentStock'],
+            if (mode === 'set') {
+                const { stock } = await this.ingredientRepo.findOne({
+                    select: ['stock'],
                     where: { ingredientId },
                 });
-                this.setCurrentStockQuery(ingredientQuery, currentStock, 'add');
+                this.ingScheduleService.setInAmount(new Date(), ingredientId, amount, 'set');
+                this.setStockQuery(ingredientQuery, amount - stock, 'add');
             } else {
-                
+                this.ingScheduleService.setInAmount(new Date(), ingredientId, amount, 'add');
+                this.setStockQuery(ingredientQuery, amount, 'add');
             }
-            this.setCurrentStockQuery(ingredientQuery, amount, 'add');
-        } else if(field === 'out') {
-            ingredientQuery.set({
-                //currentStock:  
-            });
         }
+
+        else if (field === 'out') {
+            if (mode === 'set') {
+                const { stock } = await this.ingredientRepo.findOne({
+                    select: ['stock'],
+                    where: { ingredientId },
+                });
+                this.ingScheduleService.setOutAmount(new Date(), ingredientId, amount, 'set');
+                this.setStockQuery(ingredientQuery, - amount + stock, 'add');
+            } else {
+                this.ingScheduleService.setOutAmount(new Date(), ingredientId, amount, 'add');
+                this.setStockQuery(ingredientQuery, amount, 'add');
+            }
+        }
+
+        else if (field === 'rsv') {
+            return this.ingScheduleService.setRsvAmount(new Date(), ingredientId, amount, mode);
+        }
+
+        else if (field === 'order') {
+            return this.ingScheduleService.setOrderAmount(new Date(), ingredientId, amount, mode);
+        }
+
+        return ingredientQuery.execute();
     }
 
 }

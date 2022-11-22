@@ -16,7 +16,7 @@ export class IngScheduleController {
         let d1 = dateFrom ? new Date(dateFrom) : new Date();
         let d2 = dateTo   ? new Date(dateTo  ) : new Date();
 
-        return await this.ingScheduleService.getIngSchedule([d1, d2], Number.isNaN(ingredientId) ? undefined : ingredientId);
+        return await this.ingScheduleService.getIngScheduleGroupByDate([d1, d2], Number.isNaN(ingredientId) ? undefined : ingredientId);
     
     }
 }

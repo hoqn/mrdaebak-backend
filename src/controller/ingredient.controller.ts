@@ -84,41 +84,35 @@ export class IngredientController {
     // Ingredient Stocks
 
     @Post('stocks')
-    async postIngStock(
+    async postStocks(
         @Body() body: UpdateIngredientStockDto | UpdateIngredientStockDto[]
     ) {
-        return this.setIngStock(body, 'POST');
+        return this.setStocks(body, 'add');
     }
 
     @Put('stocks')
-    async putIngStock(
+    async putStocks(
         @Body() body: UpdateIngredientStockDto | UpdateIngredientStockDto[]
     ) {
-        return this.setIngStock(body, 'PUT');
+        return this.setStocks(body, 'set');
     }
 
-    private async setIngStock(
+    private async setStocks(
         body: UpdateIngredientStockDto | UpdateIngredientStockDto[],
-        mode: 'POST' | 'PUT',
+        mode: 'add' | 'set',
     ) {
         const items: UpdateIngredientStockDto[] = !Array.isArray(body)
             ? new Array(body as unknown as UpdateIngredientStockDto)
             : body as unknown as UpdateIngredientStockDto[];
         const result = [];
 
-        const paramMode = mode === 'POST' ? 'ADD' : 'SET';
-
-        console.log(items);
         for(let item of items) {
-            result.push(
-                await this.ingredientService.setIngredientTodayStock(
-                    item.ingredientId, item.amount, paramMode
-                ).catch(e => {
-                    return {
+            result.push( await
+                this.ingredientService.setInAmount(item.ingredientId, item.amount, mode)
+                    .catch(e => <object>{
                         ingredientId: item.ingredientId,
                         error: e,
-                    };
-                })
+                    })
             );
         }
 
@@ -128,46 +122,50 @@ export class IngredientController {
     // Ingredient Orders
 
     @Get('orders')
-    async getIngOrders(
-        @Body() pageOptions: PageOptionsDto,
+    async getOrders(
+        @Query('date') date?: string | any,
+        @Body() pageOptions?: PageOptionsDto,
     ) {
-        return this.ingredientService.getIngredientOrderStocks(pageOptions);
+        const d = date ? new Date(date) : new Date();
+        return this.ingredientService.getOrderAmountByOrderDate(d);
     }
 
     @Post('orders')
-    async postIngOrder(
+    async postOrders(
         @Body() body: UpdateIngredientStockDto | UpdateIngredientStockDto[],
     ) {
-        return this.setIngOrder(body, 'POST');
+        return this.setOrders(body, 'add');
     }
 
     @Put('orders')
-    async putIngOrder(
+    async putOrders(
         @Body() body: UpdateIngredientStockDto | UpdateIngredientStockDto[],
     ) {
-        return this.setIngOrder(body, 'PUT');
+        return this.setOrders(body, 'set');
     }
 
-    private async setIngOrder(
+    @Get('orders/delivered')
+    async confirmGetOrders() {
+        throw new Error();
+    }
+
+    private async setOrders(
         body: UpdateIngredientStockDto | UpdateIngredientStockDto[],
-        mode: 'POST' | 'PUT',
+        mode: 'add'|'set',
     ) {
         const items: UpdateIngredientStockDto[] = !Array.isArray(body)
             ? new Array(body as unknown as UpdateIngredientStockDto)
             : body as unknown as UpdateIngredientStockDto[];
         const result = [];
 
-        const paramMode = mode === 'POST' ? 'ADD' : 'SET';
-
         for(let item of items)
             result.push( await
-                this.ingredientService.setIngredientOrderStock(
-                    item.ingredientId, item.amount, paramMode
-                ).catch(e => <object>{
-                        ingredientId: item.ingredientId,
-                        error: e,
-                    }
-                ));
+                this.ingredientService.setOrderAmount(item.ingredientId, item.amount, mode)
+                .catch(e => <object>{
+                    ingredientId: item.ingredientId,
+                    error: e,
+                })
+            );
 
         return result.length === 1 ? result[0] : result;
     }
