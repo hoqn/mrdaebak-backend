@@ -45,6 +45,7 @@ export class OrderController {
     async postOrderFromCart(
         @Body('userId') userId: string
     ) {
+        console.log('Controller UserId: ', userId);
         return await this.orderService.newOrderFromCart(userId)
             .catch((e: Error) => {
                 if(e.message === '0') throw new NotFoundException();
