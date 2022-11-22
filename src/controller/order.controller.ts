@@ -2,7 +2,8 @@ import { PageOptionsDto } from "@/model/dto/common.dto";
 import { UpdateOrderDinnerDto } from "@/model/dto/order.dto";
 import { OrderState } from "@/model/enum";
 import { OrderService } from "@/service/order.service";
-import { BadRequestException, Body, Controller, Delete, ForbiddenException, Get, InternalServerErrorException, NotFoundException, Param, Patch, Post, Put, Query } from "@nestjs/common";
+import { BadRequestException, Body, Controller, Delete, ForbiddenException, Get, InternalServerErrorException, NotFoundException, Param, Patch, Post, Put, Query, Req } from "@nestjs/common";
+import { Request } from "express";
 
 @Controller('orders')
 export class OrderController {
@@ -43,8 +44,10 @@ export class OrderController {
 
     @Post()
     async postOrderFromCart(
+        @Req() req: Request,
         @Body('userId') userId: string
     ) {
+        console.log('Request:', req);
         console.log('Controller UserId: ', userId);
         return await this.orderService.newOrderFromCart(userId)
             .catch((e: Error) => {
