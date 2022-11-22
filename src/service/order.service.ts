@@ -166,12 +166,17 @@ export class OrderService {
     }
 
     public async deleteOrderDinner(orderDinnerId: number) {
-        const orderDinner = await this.orderDinnerRepo.findOne({
-        //    relations: { order: true },
-            where: { orderDinnerId },
-        });
-        
-        const result = await this.orderDinnerRepo.delete({ orderDinnerId });
+
+        const orderDinner = await this.dataSource.getRepository(OrderDinner)
+            .findOneBy({ orderDinnerId });
+
+        if(!orderDinner) throw new NotFoundException();
+
+        await this.dataSource.getRepository(OrderDinnerOption)
+            .delete({ orderDinnerId });
+
+        const result = await this.dataSource.getRepository(OrderDinner)
+            .delete({ orderDinnerId });
 
         await this.updatePriceOfOrder(orderDinner.orderId);
 
