@@ -271,7 +271,6 @@ export class OrderService {
     // Private Methods
 
     private isOrderable(order: Order): boolean {
-        return true;
         return (
             order &&
             isDate(order.rsvDate) &&
