@@ -18,7 +18,7 @@ const DISCOUNT_VIP = 10000;
 
 @Injectable()
 export class OrderService {
-    
+
     constructor(
         @InjectRepository(Order) private readonly orderRepo: Repository<Order>,
         @InjectRepository(OrderDinner) private readonly orderDinnerRepo: Repository<OrderDinner>,
@@ -33,8 +33,8 @@ export class OrderService {
     /**
      * Order
      */
-    
-    public async getOrderCounts(){
+
+    public async getOrderCounts() {
         const qb = this.orderRepo.createQueryBuilder('o')
             .select('o.order_state, COUNT(o.order_id) as amount')
             .where({ orderState: Not(OrderState.CART) })
@@ -57,8 +57,8 @@ export class OrderService {
 
         if (query.userId) qb.andWhere({ userId: query.userId });
         if (query.orderState) qb.andWhere({ orderState: query.orderState });
-        
-        if(pageOptions) {
+
+        if (pageOptions) {
             if (pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection);
             qb.skip(pageOptions.skip).take(pageOptions.take);
         }
@@ -66,11 +66,12 @@ export class OrderService {
         const [pure_items, count] = await qb.getManyAndCount();
 
         const items = [];
-        for(let va of pure_items) {
-            items.push({...va, orderDinnerCount:
-                await this.orderDinnerRepo.countBy({ orderId: va.orderId }),
+        for (let va of pure_items) {
+            items.push({
+                ...va, orderDinnerCount:
+                    await this.orderDinnerRepo.countBy({ orderId: va.orderId }),
             });
-        } 
+        }
 
         // CART가 아닌 실제 주문이므로, 가격을 다시 계산할 필요는 없음.
 
@@ -108,13 +109,13 @@ export class OrderService {
 
     public async getOrderDinner(orderDinnerId: number, orderId?: number) {
         return this.orderDinnerRepo.findOne({
-            relations: { orderDinnerOptions: true }, 
+            relations: { orderDinnerOptions: true },
             where: { orderDinnerId, orderId },
         });
     }
 
     public async addOrderDinner(orderId: number, dto: CreateOrderDinnerDto) {
-        const orderDinner = <OrderDinner> {
+        const orderDinner = <OrderDinner>{
             orderId,
             dinnerId: dto.dinnerId,
             styleId: dto.styleId,
@@ -123,9 +124,9 @@ export class OrderService {
             orderDinnerOptions: [],
         };
 
-        for(let option of dto.dinnerOptionIds) {
-            if(option.amount < 1) continue;
-            orderDinner.orderDinnerOptions.push(<OrderDinnerOption> {
+        for (let option of dto.dinnerOptionIds) {
+            if (option.amount < 1) continue;
+            orderDinner.orderDinnerOptions.push(<OrderDinnerOption>{
                 dinnerOptionId: option.id,
                 amount: option.amount,
             });
@@ -144,11 +145,11 @@ export class OrderService {
             where: { orderDinnerId },
         });
 
-        if(dto.dinnerId !== undefined) orderDinner.dinnerId = dto.dinnerId;
-        if(dto.styleId !== undefined) orderDinner.styleId = dto.styleId;
-        if(dto.degreeId !== undefined) orderDinner.degreeId = dto.degreeId;
-        if(dto.dinnerAmount !== undefined) orderDinner.dinnerAmount = dto.dinnerAmount;
-        if(dto.dinnerOptionIds !== undefined)
+        if (dto.dinnerId !== undefined) orderDinner.dinnerId = dto.dinnerId;
+        if (dto.styleId !== undefined) orderDinner.styleId = dto.styleId;
+        if (dto.degreeId !== undefined) orderDinner.degreeId = dto.degreeId;
+        if (dto.dinnerAmount !== undefined) orderDinner.dinnerAmount = dto.dinnerAmount;
+        if (dto.dinnerOptionIds !== undefined)
             orderDinner.orderDinnerOptions = dto.dinnerOptionIds.map(ent => {
                 const option = new OrderDinnerOption();
                 option.orderDinnerId = orderDinnerId;
@@ -170,7 +171,7 @@ export class OrderService {
         const orderDinner = await this.dataSource.getRepository(OrderDinner)
             .findOneBy({ orderDinnerId });
 
-        if(!orderDinner) throw new NotFoundException();
+        if (!orderDinner) throw new NotFoundException();
 
         await this.dataSource.getRepository(OrderDinnerOption)
             .delete({ orderDinnerId });
@@ -183,13 +184,39 @@ export class OrderService {
         return result;
     }
 
+    public async copyOrderDinners(fromOrderId: number, toOrderId: number) {
+        
+        const orderDinners = await this.orderDinnerRepo.findBy({ orderId: fromOrderId });
+        
+        for (let orderDinner of orderDinners) {
+            const options = await this.dataSource.getRepository(OrderDinnerOption)
+                .findBy({ orderDinnerId: orderDinner.orderDinnerId });
+            
+            orderDinner.orderId = toOrderId;
+            orderDinner.orderDinnerId = undefined;
+            const { orderDinnerId } = await this.orderDinnerRepo.save(orderDinner);
+            
+            let promises: Promise<any>[] = [];
+            options.forEach(option => {
+                option.orderDinnerId = orderDinnerId;
+                promises.push(
+                    this.dataSource.getRepository(OrderDinnerOption).save(option)
+                );
+            });
+
+            await Promise.all(promises);
+        }
+
+        return await this.getOrder(toOrderId, true);
+    }
+
     /**
      * CART -> ORDER
      */
 
     public async newOrderFromCart(userId: string) {
         console.log('Order UserId', userId);
-        
+
         const cart = await this.getCart(userId);
 
         if (!cart) throw new Error('0');
@@ -205,7 +232,7 @@ export class OrderService {
 
         const result = await qb.set({
             orderDate: () => 'NOW()',
-            orderState: rsvDate.isBefore(today) ?  OrderState.WAITING : OrderState.HOLD,
+            orderState: rsvDate.isBefore(today) ? OrderState.WAITING : OrderState.HOLD,
         }).execute();
 
         /*
@@ -216,6 +243,14 @@ export class OrderService {
         // 재료 차감
         const ingredients_orderable = this.ingredientService.safeDecreaseIngredientStockForOrder(cart.orderId);
         */
+
+        // 예약 재료량 업데이트 (비동기)
+        this.ingredientService.calculateIngredientStockForOrder(cart.orderId)
+            .then((ings) => {
+                for (let [key, value] of ings)
+                    this.ingredientService.setRsvAmount(Number(key), value, 'add');
+            });
+
 
         // (단골 할인보다 후순위로 -> '이번 주문'으로 단골 여부가 달라질 수 있기 때문)
         const becomeVip = (await this.userService.incrementOrderCount(cart.userId, 1)).becomeVip;
@@ -243,7 +278,7 @@ export class OrderService {
     }
 
     private async getCart(userId: string): Promise<Order> {
-        if(!userId) return null;
+        if (!userId) return null;
 
         let order = await this.orderRepo.findOne({
             relations: {
@@ -255,9 +290,9 @@ export class OrderService {
             },
         });
 
-        
+
         if (!order) return null;
-        
+
         if (order.orderDinners)
             order = await this.updatePriceOfOrder(order.orderId);
 
@@ -292,7 +327,7 @@ export class OrderService {
 
         let price: number = 0;
 
-        for(let od of order.orderDinners)
+        for (let od of order.orderDinners)
             await this.getPriceOfOrderDinner(od, updateOrderDinner)
                 .then(pr => {
                     od.totalDinnerPrice = pr;
@@ -314,7 +349,7 @@ export class OrderService {
      * @param orderDinner 
      * @returns 해당 OrderDinner의 가격
      */
-    private async getPriceOfOrderDinner(orderDinner: OrderDinner|number, updateToDb: boolean = true): Promise<number> {
+    private async getPriceOfOrderDinner(orderDinner: OrderDinner | number, updateToDb: boolean = true): Promise<number> {
         const od = await this.orderDinnerRepo.findOne({
             relations: {
                 orderDinnerOptions: {
@@ -338,7 +373,7 @@ export class OrderService {
 
         price *= od.dinnerAmount;
 
-        await this.orderDinnerRepo.update({orderDinnerId: od.orderDinnerId}, { totalDinnerPrice: price });
+        await this.orderDinnerRepo.update({ orderDinnerId: od.orderDinnerId }, { totalDinnerPrice: price });
 
         return price;
     }

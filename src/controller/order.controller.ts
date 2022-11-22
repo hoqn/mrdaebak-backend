@@ -44,11 +44,8 @@ export class OrderController {
 
     @Post()
     async postOrderFromCart(
-        @Req() req: Request,
         @Body('userId') userId: string
     ) {
-        console.log('Request:', req);
-        console.log('Controller UserId: ', userId);
         return await this.orderService.newOrderFromCart(userId)
             .catch((e: Error) => {
                 if(e.message === '0') throw new NotFoundException();
@@ -94,5 +91,15 @@ export class OrderController {
         @Body() body: {orderState: keyof typeof OrderState}
     ) {
         return await this.orderService.setOrderState(orderId, OrderState[body.orderState]);
+    }
+
+    @Post(':orderId/copy')
+    async copyOrderToCart(
+        @Param('orderId') orderId: number,
+        @Body('userId') userId: string,
+    ) {
+        const cart = await this.orderService.getOrCreateCart(userId); // 아직 카트가 없으면 만들어야 할 수도 있으므로 반드시 호출
+        
+        return await this.orderService.copyOrderDinners(orderId, cart.orderId);
     }
 }
