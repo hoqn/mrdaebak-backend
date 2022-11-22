@@ -71,7 +71,7 @@ export class UserService {
 
         if(dto.userName !== undefined) user.userName = dto.userName;
         if(dto.address !== undefined) user.address = dto.address;
-        if(dto.phoneNumber !== undefined) user.phoneNumber = dto.address;
+        if(dto.phoneNumber !== undefined) user.phoneNumber = dto.phoneNumber;
         if(dto.cardNumber !== undefined) user.cardNumber = dto.cardNumber;
         
         if(dto.password !== undefined)
@@ -100,18 +100,21 @@ export class UserService {
         // VIP 승급 여부를 백엔드에서 하는 게 나은가? DBMS에서 처리하는 게 나은가...?
 
         // VIP 승급 여부 확인
-        const updatedOrderCount = await this.userRepo.createQueryBuilder()
-            .select('order_count')
-            .where({ userId })
-            .execute()
-            .then(r => r.orderCount);
+        const updatedOrderCount = await this.userRepo.findOne({
+            select: ['orderCount'],
+            where: { userId },
+        }).then(r => r.orderCount);
         
+        console.log(`${userId}님의 주문 횟수: ${updatedOrderCount}`);
+
         if(updatedOrderCount >= this.ORDER_COUNT_FOR_VIP) {
             await this.userRepo.createQueryBuilder()
                 .update()
                 .set({ grade: UserGrade.VIP })
                 .where({ userId, grade: Not(UserGrade.VIP) })
                 .execute();
+            
+            console.log(`${userId}님이 단골이 되셨습니다!`);
             
             return { becomeVip: true };
         }
