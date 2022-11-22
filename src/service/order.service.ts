@@ -188,6 +188,8 @@ export class OrderService {
      */
 
     public async newOrderFromCart(userId: string) {
+        console.log('Order UserId', userId);
+        
         const cart = await this.getCart(userId);
 
         if (!cart) throw new Error('0');
