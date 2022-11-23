@@ -7,7 +7,12 @@ enum StaffEvents {
     NEW_ORDER = 'NEW_ORDER',
 }
 
-@WebSocketGateway(CONFIG.socketPort, { transports: ['websocket'], namespace: 'staff' })
+@WebSocketGateway(CONFIG.socketPort, { 
+    transports: ['websocket', 'polling'], 
+    namespace: 'staff', 
+    cors: true,
+    allowEIO3: true,
+})
 export class StaffAlarmEventGateway implements OnGatewayConnection, OnGatewayDisconnect {
 
     @WebSocketServer()

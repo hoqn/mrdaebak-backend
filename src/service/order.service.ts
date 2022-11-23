@@ -2,7 +2,7 @@ import { CONFIG } from "@/config";
 import { StaffAlarmEventGateway } from "@/gateway/staff.gateway";
 import { PageOptionsDto, PageResultDto, PageResultPromise } from "@/model/dto/common.dto";
 import { CreateOrderDinnerDto, UpdateOrderDinnerDto, UpdateOrderMetaDto } from "@/model/dto/order.dto";
-import { DinnerOption, Order, OrderDinner, User } from "@/model/entity";
+import { DinnerOption, Ingredient, Order, OrderDinner, User } from "@/model/entity";
 import { OrderDinnerOption } from "@/model/entity/OrderDinnerOption";
 import { OrderState, UserGrade } from "@/model/enum";
 import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
@@ -90,6 +90,20 @@ export class OrderService {
     }
 
     public async updateOrder(orderId: number, body: UpdateOrderMetaDto) {
+
+        if (body.rsvDate !== undefined) {
+            const { rsvDate } = await this.orderRepo.findOne({ select: ['rsvDate'], where: { orderId } });
+            const newRsvDate = new Date(body.rsvDate);
+
+            const ingredients = await this.ingredientService.calculateIngredientStockForOrder(orderId);
+
+            for (let [ingredientId, amount] of ingredients) {
+                await this.ingredientService.setRsvAmount(ingredientId, -amount, 'add', rsvDate);
+                await this.ingredientService.setRsvAmount(ingredientId, amount, 'add', newRsvDate);
+            }
+
+        }
+
         return this.orderRepo.update(
             { orderId },
             { ...body },
@@ -104,26 +118,27 @@ export class OrderService {
 
         if (result.affected > 0) {
 
-            if (state === OrderState.HOLD) {
+            const { rsvDate } = await this.orderRepo.findOne({
+                select: ['rsvDate'], where: { orderId }
+            });
+
+            /*if (state === OrderState.HOLD) {
                 await this.ingredientService.calculateIngredientStockForOrder(orderId)
                     .then(async (ingredientMap) => {
                         for (let [key, value] of ingredientMap) {
                             await Promise.all([
-                                this.ingredientService.setRsvAmount(key, value, 'add'),
+                                this.ingredientService.setRsvAmount(key, value, 'add', rsvDate),
                             ]);
                         }
                     });
-            }
+            }*/
 
-            else if (state === OrderState.DONE) {
+            if (state === OrderState.DONE) {
                 // 완료됨 -> 재료에 반영
                 await this.ingredientService.calculateIngredientStockForOrder(orderId)
                     .then(async (ingredientMap) => {
                         for (let [key, value] of ingredientMap) {
-                            await Promise.all([
-                                this.ingredientService.setOutAmount(key, value, 'add'),
-                                this.ingredientService.setRsvAmount(key, -value, 'add')
-                            ]);
+                            await this.ingredientService.moveRsvToOutAmount(key, value, rsvDate);
                         }
                     });
             }
@@ -174,6 +189,11 @@ export class OrderService {
             where: { orderDinnerId },
         });
 
+        const order = await this.orderRepo.findOneBy({ orderId: orderDinner.orderId });
+
+        //원래의 재료
+        const oldIngredients = await this.ingredientService.calculateIngredientStockForOrderDinner(orderDinnerId);
+
         if (dto.dinnerId !== undefined) orderDinner.dinnerId = dto.dinnerId;
         if (dto.styleId !== undefined) orderDinner.styleId = dto.styleId;
         if (dto.degreeId !== undefined) orderDinner.degreeId = dto.degreeId;
@@ -188,17 +208,39 @@ export class OrderService {
                 return option;
             });
 
-        const result = this.orderDinnerRepo.save(orderDinner);
+        const result = await this.orderDinnerRepo.save(orderDinner);
 
         await this.updatePriceOfOrder(orderDinner.orderId);
 
-        return await this.orderDinnerRepo.findOneBy({ orderDinnerId: (await result).orderDinnerId });
+        //새로 필요한 재료
+        const newIngredients = await this.ingredientService.calculateIngredientStockForOrderDinner(orderDinnerId);
+
+        //원래의 재료를 RsvAmount에서 제외하고, 새로 필요한 재료로 업데이트
+        const rsvDate = order.rsvDate;
+        const ingredientAmountDiffers: Map<number, number> = new Map();
+        const ingredients = await this.dataSource.getRepository(Ingredient).find({ select: ['ingredientId'] });
+        for (let { ingredientId } of ingredients) {
+            const oldAmount = oldIngredients.get(ingredientId) ?? 0;
+            const newAmount = newIngredients.get(ingredientId) ?? 0;
+            const differ = newAmount - oldAmount;
+            if (differ !== 0) ingredientAmountDiffers.set(ingredientId, differ);
+        }
+        for (let [key, value] of ingredientAmountDiffers) {
+            await this.ingredientService.setRsvAmount(key, value, 'add', rsvDate);
+        }
+        // ==
+
+        return await this.orderDinnerRepo.findOneBy({ orderDinnerId: result.orderDinnerId });
     }
 
     public async deleteOrderDinner(orderDinnerId: number) {
-
         const orderDinner = await this.dataSource.getRepository(OrderDinner)
             .findOneBy({ orderDinnerId });
+
+        const order = await this.orderRepo.findOneBy({ orderId: orderDinnerId });
+
+        // 원래의 재료
+        const oldIngredients = await this.ingredientService.calculateIngredientStockForOrderDinner(orderDinnerId);
 
         if (!orderDinner) throw new NotFoundException();
 
@@ -209,6 +251,13 @@ export class OrderService {
             .delete({ orderDinnerId });
 
         await this.updatePriceOfOrder(orderDinner.orderId);
+
+        //원래의 재료를 RsvAmount에서 제외
+        const rsvDate = order.rsvDate;
+        for (let [ingredientId, amount] of oldIngredients) {
+            await this.ingredientService.setRsvAmount(ingredientId, -amount, 'add', rsvDate);
+        }
+        // ==
 
         return result;
     }
@@ -277,7 +326,7 @@ export class OrderService {
         this.ingredientService.calculateIngredientStockForOrder(cart.orderId)
             .then((ings) => {
                 for (let [key, value] of ings)
-                    this.ingredientService.setRsvAmount(Number(key), value, 'add');
+                    this.ingredientService.setRsvAmount(Number(key), value, 'add', cart.rsvDate);
             });
 
 

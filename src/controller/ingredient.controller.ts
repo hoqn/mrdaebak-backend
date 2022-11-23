@@ -1,14 +1,31 @@
+import { CONFIG } from "@/config";
 import { OutOfLimitException } from "@/exception";
 import { PageOptionsDto } from "@/model/dto/common.dto";
 import { CreateIngredientReq, UpdateIngredientReq, UpdateIngredientStockDto, UpdateIngredientStockDtoArray } from "@/model/dto/ingredient.dto";
 import { IngredientService } from "@/service";
+import { getNextIngredientDeliveryDate } from "@/service/utils/utils";
 import { BadRequestException, Body, Controller, Get, NotFoundException, Param, Patch, Post, Put, Query } from "@nestjs/common";
+import * as moment from "moment";
 
 @Controller('ingredients')
 export class IngredientController {
     constructor(
         private readonly ingredientService: IngredientService,
     ) { }
+
+    @Get('orders/delivered-day')
+    async getDeliveredDay() {
+        const yoils = CONFIG.ingredients.deliveredDate.byDayOfWeek;
+        return [
+            yoils.sun,
+            yoils.mon,
+            yoils.tue,
+            yoils.wed,
+            yoils.thu,
+            yoils.fri,
+            yoils.sat,
+        ];
+    }
 
 
     @Get('items')
@@ -33,7 +50,7 @@ export class IngredientController {
     ) {
         const dIngredients = await this.ingredientService.getDinnerIngredients(dinnerId);
 
-        if(!dIngredients) throw new NotFoundException();
+        if (!dIngredients) throw new NotFoundException();
 
         return dIngredients;
     }
@@ -43,7 +60,7 @@ export class IngredientController {
     ) {
         const dIngredients = await this.ingredientService.getStyleIngredients(styleId);
 
-        if(!dIngredients) throw new NotFoundException();
+        if (!dIngredients) throw new NotFoundException();
 
         return dIngredients;
     }
@@ -106,9 +123,9 @@ export class IngredientController {
             : body as unknown as UpdateIngredientStockDto[];
         const result = [];
 
-        for(let item of items) {
-            result.push( await
-                this.ingredientService.setInAmount(item.ingredientId, item.amount, mode)
+        for (let item of items) {
+            result.push(await
+                this.ingredientService.setInAmount(item.ingredientId, item.amount, mode, new Date())
                     .catch(e => <object>{
                         ingredientId: item.ingredientId,
                         error: e,
@@ -127,7 +144,12 @@ export class IngredientController {
         @Body() pageOptions?: PageOptionsDto,
     ) {
         const d = date ? new Date(date) : new Date();
-        return this.ingredientService.getOrderAmountByOrderDate(d);
+        const deliveredDate = getNextIngredientDeliveryDate(d, false);
+        console.log(`incoming date: ${d} / delivered date: ${deliveredDate}`);
+        return {
+            date: moment(deliveredDate).format('yyyy-MM-DD'),
+            items: await this.ingredientService.getOrderAmountByDate(deliveredDate)
+        };
     }
 
     @Post('orders')
@@ -151,21 +173,25 @@ export class IngredientController {
 
     private async setOrders(
         body: UpdateIngredientStockDto | UpdateIngredientStockDto[],
-        mode: 'add'|'set',
+        mode: 'add' | 'set',
     ) {
         const items: UpdateIngredientStockDto[] = !Array.isArray(body)
             ? new Array(body as unknown as UpdateIngredientStockDto)
             : body as unknown as UpdateIngredientStockDto[];
         const result = [];
 
-        for(let item of items)
-            result.push( await
-                this.ingredientService.setOrderAmount(item.ingredientId, item.amount, mode)
-                .catch(e => <object>{
-                    ingredientId: item.ingredientId,
-                    error: e,
-                })
+        const deliveredDate = getNextIngredientDeliveryDate(new Date(), false);
+
+        for (let item of items)
+            result.push(await
+                this.ingredientService.setOrderAmount(item.ingredientId, item.amount, mode, deliveredDate)
+                    .catch(e => <object>{
+                        ingredientId: item.ingredientId,
+                        error: e,
+                    })
             );
+
+        console.log(`incoming date: ${new Date()} / delivered date: ${deliveredDate}`);
 
         return result.length === 1 ? result[0] : result;
     }

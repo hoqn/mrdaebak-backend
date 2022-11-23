@@ -71,7 +71,7 @@ export class IngScheduleService {
         this.setAmount(date, 'order_amount', ingredientId, amount, mode);
     }
 
-    public async getOrderAmountByOrderDate(date: Date) {
+    public async getOrderAmountByDate(date: Date) {
         return await this.ingScheduleRepo.createQueryBuilder()
             .where(`date = :date`)
             .setParameter('date', moment(date).format('yyyy-MM-DD'))
@@ -79,10 +79,6 @@ export class IngScheduleService {
             .then(result =>
                 result.map(r => <object>{ ingredientId: r.ingredientId, orderAmount: r.orderAmount })
             );
-    }
-
-    public async getOrderAmountByDeliveredDate(date: Date) {
-        throw new Error("개발 중");
     }
 
     private async setAmount(date: Date, field: 'rsv_amount' | 'in_amount' | 'out_amount' | 'order_amount', ingredientId: number, amount: number, mode: SET_MODE) {
@@ -105,7 +101,7 @@ export class IngScheduleService {
         } else {
             return await this.ingScheduleRepo.query(`
                 UPDATE ing_schedule
-                SET ${field} = ${ mode === 'set' ? amount : `${field} + ${amount}` }
+                SET ${field} = ${mode === 'set' ? amount : `${field} + ${amount}`}
                 WHERE date = '${dateString}' AND ingredient_id = ${ingredientId}
             `);
         }
