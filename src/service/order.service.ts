@@ -102,24 +102,24 @@ export class OrderService {
             { orderState: state },
         );
 
-        if(result.affected > 0) {
-            
-            if(state === OrderState.HOLD) {
+        if (result.affected > 0) {
+
+            if (state === OrderState.HOLD) {
                 await this.ingredientService.calculateIngredientStockForOrder(orderId)
                     .then(async (ingredientMap) => {
-                        for(let [key, value] of ingredientMap) {
+                        for (let [key, value] of ingredientMap) {
                             await Promise.all([
                                 this.ingredientService.setRsvAmount(key, value, 'add'),
                             ]);
                         }
                     });
             }
-            
-            else if(state === OrderState.DONE) {
+
+            else if (state === OrderState.DONE) {
                 // 완료됨 -> 재료에 반영
                 await this.ingredientService.calculateIngredientStockForOrder(orderId)
                     .then(async (ingredientMap) => {
-                        for(let [key, value] of ingredientMap) {
+                        for (let [key, value] of ingredientMap) {
                             await Promise.all([
                                 this.ingredientService.setOutAmount(key, value, 'add'),
                                 this.ingredientService.setRsvAmount(key, -value, 'add')
@@ -214,17 +214,17 @@ export class OrderService {
     }
 
     public async copyOrderDinners(fromOrderId: number, toOrderId: number) {
-        
+
         const orderDinners = await this.orderDinnerRepo.findBy({ orderId: fromOrderId });
-        
+
         for (let orderDinner of orderDinners) {
             const options = await this.dataSource.getRepository(OrderDinnerOption)
                 .findBy({ orderDinnerId: orderDinner.orderDinnerId });
-            
+
             orderDinner.orderId = toOrderId;
             orderDinner.orderDinnerId = undefined;
             const { orderDinnerId } = await this.orderDinnerRepo.save(orderDinner);
-            
+
             let promises: Promise<any>[] = [];
             options.forEach(option => {
                 option.orderDinnerId = orderDinnerId;

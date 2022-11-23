@@ -1,5 +1,5 @@
 import { PageOptionsDto } from "@/model/dto/common.dto";
-import { UpdateOrderDinnerDto } from "@/model/dto/order.dto";
+import { UpdateOrderDinnerDto, UpdateOrderMetaDto } from "@/model/dto/order.dto";
 import { OrderState } from "@/model/enum";
 import { OrderService } from "@/service/order.service";
 import { BadRequestException, Body, Controller, Delete, ForbiddenException, Get, InternalServerErrorException, NotFoundException, Param, Patch, Post, Put, Query, Req } from "@nestjs/common";
@@ -101,5 +101,13 @@ export class OrderController {
         const cart = await this.orderService.getOrCreateCart(userId); // 아직 카트가 없으면 만들어야 할 수도 있으므로 반드시 호출
         
         return await this.orderService.copyOrderDinners(orderId, cart.orderId);
+    }
+
+    @Patch(':orderId')
+    async updateOrderMeta(
+        @Param('orderId') orderId: number,
+        @Body() body: UpdateOrderMetaDto,
+    ) {
+        return await this.orderService.updateOrder(orderId, body);
     }
 }
