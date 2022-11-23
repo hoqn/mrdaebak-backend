@@ -100,7 +100,7 @@ export class IngScheduleService {
             return await this.ingScheduleRepo.query(`
                 INSERT
                 INTO ing_schedule
-                ( date, ingredient_id, ${field} ) VALUES ( ${dateString}, ${ingredientId}, ${amount} );
+                ( date, ingredient_id, ${field} ) VALUES ( '${dateString}', ${ingredientId}, ${amount} );
             `);
         } else {
             return await this.ingScheduleRepo.query(`

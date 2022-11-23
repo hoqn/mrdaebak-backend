@@ -263,9 +263,9 @@ export class IngredientService {
     private setStockQuery(queryBuilder: UpdateQueryBuilder<Ingredient> | undefined, amount: number, mode: SET_MODE) {
         const qb = queryBuilder ? queryBuilder : this.ingredientRepo.createQueryBuilder().update();
         return qb.set({
-            currentStock: mode === 'set'
+            stock: mode === 'set'
                 ? amount
-                : () => `current_stock + ${amount}`
+                : () => `stock + ${amount}`
         });
     }
 
@@ -332,6 +332,8 @@ export class IngredientService {
         else if (field === 'order') {
             return this.ingScheduleService.setOrderAmount(new Date(), ingredientId, amount, mode);
         }
+
+        console.log(ingredientQuery.getQueryAndParameters());
 
         return ingredientQuery.execute();
     }

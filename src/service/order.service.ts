@@ -97,10 +97,39 @@ export class OrderService {
     }
 
     public async setOrderState(orderId: number, state: OrderState) {
-        return this.orderRepo.update(
+        const result = await this.orderRepo.update(
             { orderId },
             { orderState: state },
         );
+
+        if(result.affected > 0) {
+            
+            if(state === OrderState.HOLD) {
+                await this.ingredientService.calculateIngredientStockForOrder(orderId)
+                    .then(async (ingredientMap) => {
+                        for(let [key, value] of ingredientMap) {
+                            await Promise.all([
+                                this.ingredientService.setRsvAmount(key, value, 'add'),
+                            ]);
+                        }
+                    });
+            }
+            
+            else if(state === OrderState.DONE) {
+                // 완료됨 -> 재료에 반영
+                await this.ingredientService.calculateIngredientStockForOrder(orderId)
+                    .then(async (ingredientMap) => {
+                        for(let [key, value] of ingredientMap) {
+                            await Promise.all([
+                                this.ingredientService.setOutAmount(key, value, 'add'),
+                                this.ingredientService.setRsvAmount(key, -value, 'add')
+                            ]);
+                        }
+                    });
+            }
+        }
+
+        return result;
     }
 
     /**
@@ -337,7 +366,7 @@ export class OrderService {
         const discount = order.user.grade === UserGrade.VIP ? CONFIG.user.discountForVip : 0;
 
         order.totalPrice = price;
-        order.paymentPrice = price - discount;
+        order.paymentPrice = Math.max(0, price - discount);
 
         order.user = undefined;
 
