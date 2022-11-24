@@ -7,9 +7,9 @@ enum StaffEvents {
     NEW_ORDER = 'NEW_ORDER',
 }
 
-@WebSocketGateway(CONFIG.socketPort, { 
-    transports: ['websocket', 'polling'], 
-    namespace: 'staff', 
+@WebSocketGateway(CONFIG.socketPort, {
+    transports: ['websocket', 'polling'],
+    namespace: 'staff',
     cors: true,
     allowEIO3: true,
 })
@@ -18,20 +18,24 @@ export class StaffAlarmEventGateway implements OnGatewayConnection, OnGatewayDis
     @WebSocketServer()
     server: Server;
 
+    constructor() {
+        console.log('Socket io in PORT ', CONFIG.socketPort);
+    }
+
     private clients: Socket[] = [];
 
     public async notifyNewOrder(order: Order) {
         this.server.emit(StaffEvents.NEW_ORDER, order);
     }
-    
+
     handleConnection(client: Socket, ...args: any[]) {
-        if(process.env.NODE_ENV === 'development')
+        if (process.env.NODE_ENV === 'development')
             console.log(`${client.id} has connected.`);
         this.clients.push(client);
     }
-    
+
     handleDisconnect(client: Socket) {
-        if(process.env.NODE_ENV === 'development')
+        if (process.env.NODE_ENV === 'development')
             console.log(`${client.id} has disconnected.`);
         this.clients.splice(this.clients.findIndex(c => c.id === client.id), 1);
     }
