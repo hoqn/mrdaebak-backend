@@ -211,23 +211,26 @@ export class OrderService {
 
         await this.updatePriceOfOrder(orderDinner.orderId);
 
-        //새로 필요한 재료
-        const newIngredients = await this.ingredientService.calculateIngredientStockForOrderDinner(orderDinnerId);
+        if (order.orderState !== OrderState.CART) {
 
-        //원래의 재료를 RsvAmount에서 제외하고, 새로 필요한 재료로 업데이트
-        const rsvDate = order.rsvDate;
-        const ingredientAmountDiffers: Map<number, number> = new Map();
-        const ingredients = await this.dataSource.getRepository(Ingredient).find({ select: ['ingredientId'] });
-        for (let { ingredientId } of ingredients) {
-            const oldAmount = oldIngredients.get(ingredientId) ?? 0;
-            const newAmount = newIngredients.get(ingredientId) ?? 0;
-            const differ = newAmount - oldAmount;
-            if (differ !== 0) ingredientAmountDiffers.set(ingredientId, differ);
+            //새로 필요한 재료
+            const newIngredients = await this.ingredientService.calculateIngredientStockForOrderDinner(orderDinnerId);
+
+            //원래의 재료를 RsvAmount에서 제외하고, 새로 필요한 재료로 업데이트
+            const rsvDate = order.rsvDate;
+            const ingredientAmountDiffers: Map<number, number> = new Map();
+            const ingredients = await this.dataSource.getRepository(Ingredient).find({ select: ['ingredientId'] });
+            for (let { ingredientId } of ingredients) {
+                const oldAmount = oldIngredients.get(ingredientId) ?? 0;
+                const newAmount = newIngredients.get(ingredientId) ?? 0;
+                const differ = newAmount - oldAmount;
+                if (differ !== 0) ingredientAmountDiffers.set(ingredientId, differ);
+            }
+            for (let [key, value] of ingredientAmountDiffers) {
+                await this.ingredientService.setRsvAmount(key, value, 'add', rsvDate);
+            }
+            // ==
         }
-        for (let [key, value] of ingredientAmountDiffers) {
-            await this.ingredientService.setRsvAmount(key, value, 'add', rsvDate);
-        }
-        // ==
 
         return await this.orderDinnerRepo.findOneBy({ orderDinnerId: result.orderDinnerId });
     }
@@ -251,12 +254,14 @@ export class OrderService {
 
         await this.updatePriceOfOrder(orderDinner.orderId);
 
-        //원래의 재료를 RsvAmount에서 제외
-        const rsvDate = order.rsvDate;
-        for (let [ingredientId, amount] of oldIngredients) {
-            await this.ingredientService.setRsvAmount(ingredientId, -amount, 'add', rsvDate);
+        if (order.orderState !== OrderState.CART) {
+            //원래의 재료를 RsvAmount에서 제외
+            const rsvDate = order.rsvDate;
+            for (let [ingredientId, amount] of oldIngredients) {
+                await this.ingredientService.setRsvAmount(ingredientId, -amount, 'add', rsvDate);
+            }
+            // ==   
         }
-        // ==
 
         return result;
     }
@@ -311,15 +316,6 @@ export class OrderService {
             orderDate: () => 'NOW()',
             orderState: rsvDate.isBefore(today) ? OrderState.WAITING : OrderState.HOLD,
         }).execute();
-
-        /*
-        // 예약 재료량 업데이트
-        for(let orderDinner of cart.orderDinners) {
-            //await this.ingredientService
-        }
-        // 재료 차감
-        const ingredients_orderable = this.ingredientService.safeDecreaseIngredientStockForOrder(cart.orderId);
-        */
 
         // 예약 재료량 업데이트 (비동기)
         this.ingredientService.calculateIngredientStockForOrder(cart.orderId)
