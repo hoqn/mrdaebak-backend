@@ -4,6 +4,7 @@ import { PageOptionsDto } from "@/model/dto/common.dto";
 import { CreateIngredientReq, UpdateIngredientReq, UpdateIngredientStockDto, UpdateIngredientStockDtoArray } from "@/model/dto/ingredient.dto";
 import { IngredientService } from "@/service";
 import { getNextIngredientDeliveryDate } from "@/service/utils/utils";
+import { IngScheduleService } from "@/service/ingschedule.service";
 import { BadRequestException, Body, Controller, Get, NotFoundException, Param, Patch, Post, Put, Query } from "@nestjs/common";
 import * as moment from "moment";
 
@@ -11,6 +12,7 @@ import * as moment from "moment";
 export class IngredientController {
     constructor(
         private readonly ingredientService: IngredientService,
+        private readonly ingScheduleService: IngScheduleService,
     ) { }
 
     @Get('orders/delivered-day')
@@ -25,6 +27,19 @@ export class IngredientController {
             yoils.fri,
             yoils.sat,
         ];
+    }
+
+    @Get('schedule')
+    public async getSchedules(
+        @Query('date_from') dateFrom: string | any,
+        @Query('date_to') dateTo: string | any,
+        @Query('ingredient_id') ingredientId?: number,
+    ) {
+        let d1 = dateFrom ? new Date(dateFrom) : new Date();
+        let d2 = dateTo ? new Date(dateTo) : new Date();
+
+        return await this.ingScheduleService.getIngScheduleGroupByDate([d1, d2], Number.isNaN(ingredientId) ? undefined : ingredientId);
+
     }
 
 

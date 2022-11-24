@@ -9,12 +9,10 @@ import { BadRequestException, Injectable, NotFoundException } from "@nestjs/comm
 import { InjectDataSource, InjectRepository } from "@nestjs/typeorm";
 import { isDate, isNotEmpty, isNumberString, isPhoneNumber, isString } from "class-validator";
 import * as moment from "moment";
-import { DataSource, DeleteResult, FindOptionsOrder, Not, QueryBuilder, Repository, UpdateQueryBuilder, UpdateResult } from "typeorm";
+import { Between, DataSource, DeleteResult, FindOperator, FindOptionsOrder, FindOptionsWhere, Not, QueryBuilder, Repository, UpdateQueryBuilder, UpdateResult } from "typeorm";
 import { IngredientService } from "./ingredient.service";
 import { MenuService } from "./menu.service";
 import { UserService } from "./user.service";
-
-const DISCOUNT_VIP = 10000;
 
 @Injectable()
 export class OrderService {
@@ -47,7 +45,7 @@ export class OrderService {
     }
 
     public async getOrdersBy(
-        query: { userId?: string, orderState?: OrderState },
+        query: { userId?: string, orderState?: OrderState, rsvDate?: FindOperator<any> },
         pageOptions?: PageOptionsDto
     ) {
         const qb = this.orderRepo.createQueryBuilder()
@@ -55,8 +53,9 @@ export class OrderService {
 
         qb.andWhere({ orderState: Not(OrderState.CART) });
 
-        if (query.userId) qb.andWhere({ userId: query.userId });
-        if (query.orderState) qb.andWhere({ orderState: query.orderState });
+        if (query.userId !== undefined) qb.andWhere({ userId: query.userId });
+        if (query.orderState !== undefined) qb.andWhere({ orderState: query.orderState });
+        if (query.rsvDate !== undefined) qb.andWhere({ rsvDate: query.rsvDate });
 
         if (pageOptions) {
             if (pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection);
@@ -92,6 +91,7 @@ export class OrderService {
     public async updateOrder(orderId: number, body: UpdateOrderMetaDto) {
 
         if (body.rsvDate !== undefined) {
+            console.log('Update Order', orderId);
             const { rsvDate } = await this.orderRepo.findOne({ select: ['rsvDate'], where: { orderId } });
             const newRsvDate = new Date(body.rsvDate);
 
@@ -101,7 +101,6 @@ export class OrderService {
                 await this.ingredientService.setRsvAmount(ingredientId, -amount, 'add', rsvDate);
                 await this.ingredientService.setRsvAmount(ingredientId, amount, 'add', newRsvDate);
             }
-
         }
 
         return this.orderRepo.update(

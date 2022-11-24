@@ -3,8 +3,8 @@ import { PageOptionsDto, PageResultDto, PageResultPromise } from "@/model/dto/co
 import { CreateIngredientReq, UpdateIngredientReq, UpdateIngredientStockDto } from "@/model/dto/ingredient.dto";
 import { Dinner, DinnerIngredient, DinnerOption, Ingredient, IngredientCategory, Order, OrderDinner, Style, StyleIngredient } from "@/model/entity";
 import { OrderDinnerOption } from "@/model/entity/OrderDinnerOption";
-import { IngSchedule } from "@/_experimental/schedules/ingschedule.entity";
-import { IngScheduleService } from "@/_experimental/schedules/ingschedule.service";
+import { IngSchedule } from "@/model/entity/ingschedule";
+import { IngScheduleService } from "@/service/ingschedule.service";
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import * as moment from "moment";

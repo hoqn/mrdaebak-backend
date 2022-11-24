@@ -8,8 +8,8 @@ import { CONFIG } from './config';
 import { Dinner, DinnerIngredient, DinnerOption, Ingredient, IngredientCategory, Order, OrderDinner, Staff, Style, StyleIngredient, StyleOption, User } from './model/entity';
 import { OrderDinnerOption } from './model/entity/OrderDinnerOption';
 import { IngredientModule } from './module/ingredient.module';
-import { IngSchedule } from './_experimental/schedules/ingschedule.entity';
-import { IngScheduleModule } from './_experimental/schedules/ingschedule.module';
+import { IngSchedule } from '@/model/entity/ingschedule';
+import { ScheduleModule } from '@nestjs/schedule';
 
 const typeOrmConfig = <TypeOrmModuleOptions>{
   ...CONFIG.db,
@@ -40,8 +40,6 @@ const typeOrmModule = TypeOrmModule.forRoot(typeOrmConfig);
     CartModule,
     IngredientModule,
     StoreModule,
-
-    IngScheduleModule,
   ]
 })
 export class AppModule { }

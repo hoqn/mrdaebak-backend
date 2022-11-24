@@ -1,18 +1,16 @@
 import { IngredientController } from "@/controller/ingredient.controller";
-import { Ingredient, IngredientCategory } from "@/model/entity";
+import { Ingredient, IngredientCategory, IngSchedule } from "@/model/entity";
 import { IngredientService } from "@/service";
-import { IngScheduleModule } from "@/_experimental/schedules/ingschedule.module";
-import { IngScheduleService } from "@/_experimental/schedules/ingschedule.service";
+import { IngScheduleService } from "@/service/ingschedule.service";
 import { Module } from "@nestjs/common";
 import { TypeOrmModule } from "@nestjs/typeorm";
 
 @Module({
     imports: [
-        IngScheduleModule,
-        TypeOrmModule.forFeature([Ingredient, IngredientCategory]),
+        TypeOrmModule.forFeature([Ingredient, IngredientCategory, IngSchedule]),
     ],
-    exports: [TypeOrmModule, IngredientService],
+    exports: [TypeOrmModule, IngredientService, IngScheduleService],
     controllers: [IngredientController],
     providers: [IngredientService, IngScheduleService],
 })
-export class IngredientModule {}
+export class IngredientModule { }

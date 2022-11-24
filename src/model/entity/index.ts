@@ -4,6 +4,7 @@ export * from "./DinnerIngredient";
 
 export * from "./Ingredient";
 export * from "./IngredientCategory";
+export * from "./ingschedule";
 
 export * from "./Order";
 export * from "./OrderDinner";

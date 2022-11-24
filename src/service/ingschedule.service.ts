@@ -2,7 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import * as moment from "moment";
 import { Between, Repository } from "typeorm";
-import { IngSchedule } from "./ingschedule.entity";
+import { IngSchedule } from "@/model/entity/ingschedule";
 
 type SET_MODE = 'add' | 'set';
 

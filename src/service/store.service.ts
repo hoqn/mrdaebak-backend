@@ -1,40 +1,68 @@
 import { CONFIG } from "@/config";
+import { OrderState } from "@/model/enum";
+import { IngScheduleService } from "@/service/ingschedule.service";
 import { Injectable } from "@nestjs/common";
-import moment from "moment";
+import { Cron, CronExpression } from "@nestjs/schedule";
+import * as moment from "moment";
+import { Raw } from "typeorm";
 import { IngredientService } from "./ingredient.service";
+import { OrderService } from "./order.service";
 
 @Injectable()
 export class StoreService {
+
     constructor(
         private readonly ingredientService: IngredientService,
-    ) {}
+        private readonly ingScheduleService: IngScheduleService,
+        private readonly orderService: OrderService,
+    ) {
 
-    async openStore() {
-        // 재료 받기
-        this.receiveOrderedIngredients();
     }
 
-    private async receiveOrderedIngredients() {
-        const today = moment();
-        const yoil = today.day();
-
-        const deliveredYoil = CONFIG.ingredients.deliveredDate.byDayOfWeek;
-
-        let delivered: boolean = false;
-
-        switch(yoil) {
-            case 0: delivered = deliveredYoil.sun; break;
-            case 1: delivered = deliveredYoil.mon; break;
-            case 2: delivered = deliveredYoil.tue; break;
-            case 3: delivered = deliveredYoil.wed; break;
-            case 4: delivered = deliveredYoil.thu; break;
-            case 5: delivered = deliveredYoil.fri; break;
-            case 6: delivered = deliveredYoil.sat; break;
-        }
-
-        if(delivered) {
-            // 재료를 받는다.
-            this.ingredientService.receiveAllIngredientOrderStock();
-        }
+    @Cron('*/05 * * * *')
+    test10Seconds() {
+        console.log('Cron', 'Called!');
     }
+
+    readonly ingDeliveryYoilData = CONFIG.ingredients.deliveredDate.byDayOfWeek;
+    readonly ingDeliveryYoils = [
+        this.ingDeliveryYoilData.sun,
+        this.ingDeliveryYoilData.mon,
+        this.ingDeliveryYoilData.tue,
+        this.ingDeliveryYoilData.wed,
+        this.ingDeliveryYoilData.thu,
+        this.ingDeliveryYoilData.fri,
+        this.ingDeliveryYoilData.sat,
+    ]
+
+    // TEST!!
+    @Cron(CronExpression.EVERY_10_SECONDS)
+    async test() {
+        this.prepareOpening();
+    }
+
+    @Cron('0 15 * * *', {
+        name: 'before-opening',
+        timeZone: 'Asia/Seoul',
+    })
+    async prepareOpening() {
+        const today = new Date();
+        const todayString = moment(today).format('yyyy-MM-DD');
+
+        if (this.ingDeliveryYoils[today.getDay()]) {
+            // 재료 배달 완료
+            this.ingredientService.copyAllOrderToInAmount(today);
+        }
+
+
+        // 잡혀있는 대기 주문들 예약 주문으로 전환
+        const orders = await this.orderService.getOrdersBy({ orderState: OrderState.HOLD, rsvDate: Raw((alias) => `DATE(${alias}) = '${todayString}'`) });
+        console.log('Orders', orders.items.length);
+
+        orders.items.forEach((order) => {
+            this.orderService.setOrderState(order.orderId, OrderState.WAITING)
+                .then(() => console.log(`${order.orderId}번 주문이 예약되었습니다.`));
+        });
+    }
+
 }
