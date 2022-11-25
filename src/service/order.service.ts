@@ -244,7 +244,7 @@ export class OrderService {
         const orderDinner = await this.dataSource.getRepository(OrderDinner)
             .findOneBy({ orderDinnerId });
 
-        const order = await this.orderRepo.findOneBy({ orderId: orderDinnerId });
+        const order = await this.orderRepo.findOneBy({ orderId: orderDinner.orderId });
 
         // 원래의 재료
         const oldIngredients = await this.ingredientService.calculateIngredientStockForOrderDinner(orderDinnerId);
