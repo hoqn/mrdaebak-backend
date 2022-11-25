@@ -15,9 +15,9 @@ export class StaffService {
 
     async createMember(role: StaffRole, dto: CreateStaffReq) {
         const existing = await this.staffRepo.findOneBy({ staffId: dto.staffId });
-        if(existing) throw new IdDuplicatedException();
+        if (existing) throw new IdDuplicatedException();
 
-        const member = await this.staffRepo.save(<Staff> {
+        const member = await this.staffRepo.save(<Staff>{
             staffId: dto.staffId,
             password: PasswordEncryptor.encrypt(dto.password),
             staffName: dto.staffName,
@@ -43,7 +43,7 @@ export class StaffService {
         if (query.staffName) qb.andWhere({ staffName: ILike(`%${query.staffName}%`) });
         if (query.role !== undefined) qb.andWhere({ role: query.role });
 
-        if(pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection);
+        if (pageOptions.orderable) qb.orderBy(pageOptions.order_by, pageOptions.order_direction);
         qb.skip(pageOptions.skip).take(pageOptions.take);
 
         const [items, count] = await qb.getManyAndCount();
@@ -60,8 +60,8 @@ export class StaffService {
             .select('role')
             .where({ staffId })
             .execute().then(o => o[0].role);
-        
-        if(currentRole >= StaffRole.PENDING_COOK && currentRole < StaffRole.COOK) {
+
+        if (currentRole >= StaffRole.PENDING_COOK && currentRole < StaffRole.COOK) {
             return this.staffRepo.createQueryBuilder()
                 .update()
                 .where({ staffId })
@@ -78,7 +78,7 @@ export class StaffService {
             .where({ staffId });
 
         const updateBody = <Partial<Staff>>{
-            ...body, 
+            ...body,
             role: body.staffRole,
         };
 

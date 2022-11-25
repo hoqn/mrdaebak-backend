@@ -19,7 +19,7 @@ export class MenuService {
         const qb = this.dinnerRepo.createQueryBuilder()
             .select();
 
-        if (pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection);
+        if (pageOptions.orderable) qb.orderBy(pageOptions.order_by, pageOptions.order_direction);
         qb.skip(pageOptions.skip).take(pageOptions.take);
 
         const [items, count] = await qb.getManyAndCount();
@@ -70,7 +70,7 @@ export class MenuService {
                 .where('ds.dinner_id=:dinnerId', { dinnerId: query.dinnerId });
         }
 
-        if (pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection);
+        if (pageOptions.orderable) qb.orderBy(pageOptions.order_by, pageOptions.order_direction);
         qb.skip(pageOptions.skip).take(pageOptions.take);
 
         const [items, count] = await qb.getManyAndCount();

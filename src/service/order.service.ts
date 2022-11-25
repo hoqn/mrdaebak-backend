@@ -58,7 +58,7 @@ export class OrderService {
         if (query.rsvDate !== undefined) qb.andWhere({ rsvDate: query.rsvDate });
 
         if (pageOptions) {
-            if (pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection);
+            if (pageOptions.orderable) qb.orderBy(pageOptions.order_by, pageOptions.order_direction);
             qb.skip(pageOptions.skip).take(pageOptions.take);
         }
 
@@ -73,6 +73,8 @@ export class OrderService {
         }
 
         // CART가 아닌 실제 주문이므로, 가격을 다시 계산할 필요는 없음.
+
+        console.log(qb.getQuery(), '\n\n', pageOptions);
 
         return new PageResultDto(pageOptions, count, items);
     }

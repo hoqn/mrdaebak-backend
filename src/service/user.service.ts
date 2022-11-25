@@ -25,14 +25,14 @@ export class UserService {
         // ID 중복 체크
         const existing = await this.userRepo.findOneBy({ userId: body.userId });
         if (existing) throw new IdDuplicatedException();
-        
-        const user = await this.userRepo.save(<User> {
+
+        const user = await this.userRepo.save(<User>{
             userId: body.userId,
             password: PasswordEncryptor.encrypt(body.password),
             userName: body.userName,
             phoneNumber: body.phoneNumber,
             address: body.address,
-            cardNumber: body.cardNumber, 
+            cardNumber: body.cardNumber,
         });
 
         user.password = undefined;
@@ -51,10 +51,10 @@ export class UserService {
     ): PageResultPromise<User> {
         const qb = this.userRepo.createQueryBuilder();
 
-        if(query.userName !== undefined) qb.andWhere({ userName: ILike(`%${query.userName}%`) });
-        if(query.grade !== undefined) qb.andWhere({ grade: query.grade});
+        if (query.userName !== undefined) qb.andWhere({ userName: ILike(`%${query.userName}%`) });
+        if (query.grade !== undefined) qb.andWhere({ grade: query.grade });
 
-        if(pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection);
+        if (pageOptions.orderable) qb.orderBy(pageOptions.order_by, pageOptions.order_direction);
         qb.skip(pageOptions.skip).take(pageOptions.take);
 
         const [items, count] = await qb.getManyAndCount();
@@ -67,14 +67,14 @@ export class UserService {
     }
 
     async updateUser(userId: string, dto: PatchUserDto) {
-        const user = await this.userRepo.findOneBy({userId});
+        const user = await this.userRepo.findOneBy({ userId });
 
-        if(dto.userName !== undefined) user.userName = dto.userName;
-        if(dto.address !== undefined) user.address = dto.address;
-        if(dto.phoneNumber !== undefined) user.phoneNumber = dto.phoneNumber;
-        if(dto.cardNumber !== undefined) user.cardNumber = dto.cardNumber;
-        
-        if(dto.password !== undefined)
+        if (dto.userName !== undefined) user.userName = dto.userName;
+        if (dto.address !== undefined) user.address = dto.address;
+        if (dto.phoneNumber !== undefined) user.phoneNumber = dto.phoneNumber;
+        if (dto.cardNumber !== undefined) user.cardNumber = dto.cardNumber;
+
+        if (dto.password !== undefined)
             user.password = PasswordEncryptor.encrypt(dto.password);
 
         return await this.userRepo.save(user);
@@ -104,18 +104,18 @@ export class UserService {
             select: ['orderCount'],
             where: { userId },
         }).then(r => r.orderCount);
-        
+
         console.log(`${userId}님의 주문 횟수: ${updatedOrderCount}`);
 
-        if(updatedOrderCount >= this.ORDER_COUNT_FOR_VIP) {
+        if (updatedOrderCount >= this.ORDER_COUNT_FOR_VIP) {
             await this.userRepo.createQueryBuilder()
                 .update()
                 .set({ grade: UserGrade.VIP })
                 .where({ userId, grade: Not(UserGrade.VIP) })
                 .execute();
-            
+
             console.log(`${userId}님이 단골이 되셨습니다!`);
-            
+
             return { becomeVip: true };
         }
 

@@ -8,6 +8,10 @@ import { Raw } from "typeorm";
 import { IngredientService } from "./ingredient.service";
 import { OrderService } from "./order.service";
 
+const storePrepareAt = CONFIG.storePrepareAt.split(':');
+const storePrepareAtHour = storePrepareAt[0];
+const storePrepareAtMinute = storePrepareAt.length >= 2 ? storePrepareAt[1] : '0';
+
 @Injectable()
 export class StoreService {
 
@@ -28,7 +32,7 @@ export class StoreService {
         this.ingDeliveryYoilData.sat,
     ]
 
-    @Cron('0 15 * * *', {
+    @Cron(`${storePrepareAtMinute} ${storePrepareAtHour} * * 1-5`, {
         name: 'before-opening',
         timeZone: 'Asia/Seoul',
     })

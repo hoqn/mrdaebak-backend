@@ -70,7 +70,7 @@ export class IngredientService {
         if (query.ingredientName !== undefined) qb.andWhere({ ingredientName: query.ingredientName });
 
         if (pageOptions !== undefined) {
-            if (pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection)
+            if (pageOptions.orderable) qb.orderBy(pageOptions.order_by, pageOptions.order_direction)
             qb.skip(pageOptions.skip).take(pageOptions.take);
         }
 
@@ -113,7 +113,7 @@ export class IngredientService {
         if (query.categoryName !== undefined) qb.andWhere({ categoryName: query.categoryName });
 
         if (pageOptions !== undefined) {
-            if (pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection);
+            if (pageOptions.orderable) qb.orderBy(pageOptions.order_by, pageOptions.order_direction);
             qb.skip(pageOptions.skip).take(pageOptions.take);
         }
 
@@ -128,7 +128,7 @@ export class IngredientService {
         const qb = this.ingredientRepo.createQueryBuilder('i')
             .select().where({ orderedNumber: MoreThan(0) });
 
-        if (pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection);
+        if (pageOptions.orderable) qb.orderBy(pageOptions.order_by, pageOptions.order_direction);
         qb.skip(pageOptions.skip).take(pageOptions.take);
 
         const [items, count] = await qb.getManyAndCount();

@@ -1,26 +1,24 @@
 import { Type } from "class-transformer";
-import { IsArray, IsEnum, IsInt, IsOptional, Max, Min } from "class-validator";
+import { IsArray, IsEnum, IsIn, IsInt, IsOptional, Max, Min } from "class-validator";
+import { type } from "os";
 
-export enum OrderDirection {
-    ASC = 'ASC',
-    DESC = 'DESC',
-}
+export type OrderDirection = 'ASC' | 'DESC';
 
 export class PageOptionsDto {
     @IsOptional()
-    orderBy?: string;
+    order_by?: string;
 
-    @IsEnum(OrderDirection) @IsOptional()
-    readonly orderDirection?: OrderDirection;
+    @IsIn(['ASC', 'DESC']) @IsOptional()
+    readonly order_direction?: OrderDirection = 'ASC';
 
     get orderable(): boolean {
-        return this.orderBy !== undefined && this.orderDirection !== undefined;
+        return this.order_by !== undefined && this.order_direction !== undefined;
     }
 
     @Type(() => Number) @Min(1)
     @IsInt() @IsOptional()
     readonly page?: number = 1;
-    
+
     @Type(() => Number) @Min(1) @Max(100)
     @IsInt() @IsOptional()
     readonly take?: number = 10;
@@ -39,8 +37,8 @@ export class PageResultDto<T> {
     @IsArray()
     readonly items: T[];
 
-    constructor(options: PageOptionsDto|undefined, countMax: number, items: T[]) {
-        if(options !== undefined) {
+    constructor(options: PageOptionsDto | undefined, countMax: number, items: T[]) {
+        if (options !== undefined) {
             this.page = options.page;
             this.pageMax = Math.ceil(countMax / options.take);
             this.count = items.length;
