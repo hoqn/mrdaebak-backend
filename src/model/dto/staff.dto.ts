@@ -13,7 +13,7 @@ export class CreateStaffReq {
     @IsString()
     readonly staffName: string;
 
-    @IsString() @IsOptional() @IsPhoneNumber('KR')
+    @IsString() @IsOptional() @IsPhoneNumber('KR', { message: '알맞은 전화번호를 입력해주세요.' })
     readonly phoneNumber: string | null;
 
     @IsEnum(StaffRole, { always: false })
@@ -24,4 +24,4 @@ export class CreateStaffReq {
     }
 }
 
-export class UpdateStaffReq extends PartialType(CreateStaffReq) {  }
+export class UpdateStaffReq extends PartialType(CreateStaffReq) { }

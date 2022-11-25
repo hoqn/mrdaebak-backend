@@ -14,7 +14,7 @@ export class CreateOrderDto {
     @IsString() @IsOptional()
     deliveryAddress?: string;
 
-    @IsPhoneNumber('KR') @IsOptional()
+    @IsPhoneNumber('KR', { message: '알맞은 전화번호를 입력해주세요.' }) @IsOptional()
     phoneNumber?: string;
 
     @IsNumberString() @IsOptional()
@@ -35,7 +35,7 @@ class DinnerOptionIdMapEntity {
     amount: number;
 }
 
- export class CreateOrderDinnerDto {
+export class CreateOrderDinnerDto {
     @IsNumber() @IsOptional()
     degreeId: number;
 
