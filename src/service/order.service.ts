@@ -90,16 +90,21 @@ export class OrderService {
 
     public async updateOrder(orderId: number, body: UpdateOrderMetaDto) {
 
-        if (body.rsvDate !== undefined) {
-            console.log('Update Order', orderId);
-            const { rsvDate } = await this.orderRepo.findOne({ select: ['rsvDate'], where: { orderId } });
-            const newRsvDate = new Date(body.rsvDate);
+        const order = await this.orderRepo.findOneBy({ orderId });
 
-            const ingredients = await this.ingredientService.calculateIngredientStockForOrder(orderId);
+        console.log('Update Order', orderId);
 
-            for (let [ingredientId, amount] of ingredients) {
-                await this.ingredientService.setRsvAmount(ingredientId, -amount, 'add', rsvDate);
-                await this.ingredientService.setRsvAmount(ingredientId, amount, 'add', newRsvDate);
+        if (order.orderState !== OrderState.CART) {
+            if (body.rsvDate !== undefined) {
+                const rsvDate = order.rsvDate;
+                const newRsvDate = new Date(body.rsvDate);
+
+                const ingredients = await this.ingredientService.calculateIngredientStockForOrder(orderId);
+
+                for (let [ingredientId, amount] of ingredients) {
+                    await this.ingredientService.setRsvAmount(ingredientId, -amount, 'add', rsvDate);
+                    await this.ingredientService.setRsvAmount(ingredientId, amount, 'add', newRsvDate);
+                }
             }
         }
 
