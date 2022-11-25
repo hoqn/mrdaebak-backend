@@ -40,6 +40,8 @@ export interface Config {
     serverPort: number,
     socketPort: number,
     db: DataSourceOptions,
+    storeOpenAt: string,
+    storePrepareAt: string,
     staff: StaffConfig,
     user: UserConfig,
     ingredients: IngredientsConfig,
@@ -58,6 +60,8 @@ const defaultConfig: Config = {
         synchronize: false,
         /* TODO: false로 바꿀 것! */
     },
+    storeOpenAt: '15:30',
+    storePrepareAt: '15:00',
     staff: {
         alarm: {
             newOrder: true,
