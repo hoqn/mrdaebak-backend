@@ -39,7 +39,6 @@ export class IngredientController {
         let d2 = dateTo ? new Date(dateTo) : new Date();
 
         return await this.ingScheduleService.getIngScheduleGroupByDate([d1, d2], Number.isNaN(ingredientId) ? undefined : ingredientId);
-
     }
 
 

@@ -10,6 +10,7 @@ import { OrderDinnerOption } from './model/entity/OrderDinnerOption';
 import { IngredientModule } from './module/ingredient.module';
 import { IngSchedule } from '@/model/entity/ingschedule';
 import { ScheduleModule } from '@nestjs/schedule';
+import { LegacyController } from './controller';
 
 const typeOrmConfig = <TypeOrmModuleOptions>{
   ...CONFIG.db,
@@ -40,6 +41,7 @@ const typeOrmModule = TypeOrmModule.forRoot(typeOrmConfig);
     CartModule,
     IngredientModule,
     StoreModule,
-  ]
+  ],
+  controllers: [LegacyController],
 })
 export class AppModule { }
