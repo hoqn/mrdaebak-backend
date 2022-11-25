@@ -7,7 +7,8 @@ import { Moment } from "moment";
  * ORDER
  */
 
-export class CreateOrderDto {
+//export class CreateOrderDto {
+export class UpdateOrderMetaDto {
     @IsDateString() @IsOptional()
     rsvDate?: string;
 
@@ -24,7 +25,7 @@ export class CreateOrderDto {
     request?: string;
 }
 
-export class UpdateOrderMetaDto extends PartialType(CreateOrderDto) { }
+//export class UpdateOrderMetaDto extends PartialType(CreateOrderDto) { }
 
 /**
  * ORDERDINNER

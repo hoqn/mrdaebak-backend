@@ -5,7 +5,7 @@ import { Injectable, NotFoundException, UnauthorizedException } from "@nestjs/co
 import { JwtService } from "@nestjs/jwt";
 import { StaffService } from "./staff.service";
 import { UserService } from "./user.service";
-import PasswordEncryptor from "./utils/passwordEncryptor";
+import PasswordEncryptor from "./utils/password-encryptor.util";
 
 @Injectable()
 export class AuthService {
@@ -13,25 +13,25 @@ export class AuthService {
         private readonly userService: UserService,
         private readonly staffService: StaffService,
         private readonly jwtService: JwtService,
-    ) {}
-    
+    ) { }
+
     async validateUserToken(payload: SessionUser) {
         console.log('Payload: ', payload);
 
-        if(payload.type === ClientType.USER) {
+        if (payload.type === ClientType.USER) {
             return await this.userService.getUserByUserId(payload.id)
                 .then(u => u ? {
                     type: ClientType.USER,
                     role: SecurityRole.USER,
                     id: u.userId
-                }: null);
-        } else if(payload.type === ClientType.STAFF) {
+                } : null);
+        } else if (payload.type === ClientType.STAFF) {
             return await this.staffService.getMember(payload.id)
                 .then(u => {
-                    if(u) {
+                    if (u) {
                         //const role = SecurityRole.OWNER;
                         const role = SecurityRole.fromStaffRole(u.role);
-                        if(!role) return null;
+                        if (!role) return null;
                         return {
                             type: ClientType.STAFF,
                             role: role,
@@ -54,23 +54,23 @@ export class AuthService {
 
     private async login(type: ClientType, id: string, password: string): Promise<string> {
         let e: Error = undefined;
-        
+
         const requiredPassword = type === ClientType.STAFF
             ? await this.staffService.getMember(id).then(member => {
-                if(member) return member.password
+                if (member) return member.password
                 else e = new NoIdException();
             })
             : await this.userService.getUserByUserId(id).then(user => {
-                if(user) return user.password
+                if (user) return user.password
                 else e = new NoIdException();
             });
 
-        if(e) throw e;
+        if (e) throw e;
 
         const encrypedPassword = PasswordEncryptor.encrypt(password);
 
-        if(requiredPassword === encrypedPassword) {
-            return this.jwtService.sign(<SessionUser> {
+        if (requiredPassword === encrypedPassword) {
+            return this.jwtService.sign(<SessionUser>{
                 type, id: id,
             });
         }

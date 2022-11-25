@@ -1,4 +1,5 @@
-import { CONFIG } from "@/config";
+import AppConfig from "@/config";
+
 import { IdDuplicatedException } from "@/exception";
 import { PageOptionsDto, PageResultDto, PageResultPromise } from "@/model/dto/common.dto";
 import { CreateUserDto, PatchUserDto } from "@/model/dto/user.dto";
@@ -9,7 +10,7 @@ import { HttpException, HttpStatus, Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { IsPositive } from "class-validator";
 import { ILike, Not, Repository } from "typeorm";
-import PasswordEncryptor from "./utils/passwordEncryptor";
+import PasswordEncryptor from "./utils/password-encryptor.util";
 
 /**
  * @Todo 아이디 중복 등 확인하는 매커니즘 추가
@@ -87,7 +88,7 @@ export class UserService {
             .execute();
     }
 
-    private readonly ORDER_COUNT_FOR_VIP = CONFIG.user.orderCountForVip;
+    private readonly ORDER_COUNT_FOR_VIP = AppConfig.user.orderCountForVip;
 
     async incrementOrderCount(userId: string, quantity: number) {
         // 고민... 일단은 OrderCount를 수동으로 조절하는 방식으로 구현했는데,

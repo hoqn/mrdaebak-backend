@@ -1,19 +1,19 @@
 import { IdDuplicatedException } from "@/exception/IdDuplicatedException";
 import { PageOptionsDto, PageResultDto, PageResultPromise } from "@/model/dto/common.dto";
-import { CreateStaffReq, UpdateStaffReq } from "@/model/dto/staff.dto";
+import { CreateStaffDto, UpdateStaffDto } from "@/model/dto/staff.dto";
 import { Staff } from "@/model/entity";
 import { StaffRole } from "@/model/enum";
 import { BadRequestException } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { DeleteResult, ILike, Not, Repository, UpdateResult } from "typeorm";
-import PasswordEncryptor from "./utils/passwordEncryptor";
+import PasswordEncryptor from "./utils/password-encryptor.util";
 
 export class StaffService {
     constructor(
         @InjectRepository(Staff) private readonly staffRepo: Repository<Staff>
     ) { }
 
-    async createMember(role: StaffRole, dto: CreateStaffReq) {
+    async createMember(role: StaffRole, dto: CreateStaffDto) {
         const existing = await this.staffRepo.findOneBy({ staffId: dto.staffId });
         if (existing) throw new IdDuplicatedException();
 
@@ -72,7 +72,7 @@ export class StaffService {
         throw new BadRequestException(`해당 직원은 승인할 수 없거나 이미 승인된 상태입니다. (${currentRole})`);
     }
 
-    async updateMember(staffId: string, body: UpdateStaffReq): Promise<UpdateResult> {
+    async updateMember(staffId: string, body: UpdateStaffDto): Promise<UpdateResult> {
         const qb = this.staffRepo.createQueryBuilder()
             .update()
             .where({ staffId });

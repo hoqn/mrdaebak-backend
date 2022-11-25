@@ -1,4 +1,5 @@
-import { CONFIG } from "@/config";
+import AppConfig from '@/config';
+
 import { OrderState } from "@/model/enum";
 import { IngScheduleService } from "@/service/ingschedule.service";
 import { Injectable } from "@nestjs/common";
@@ -8,9 +9,7 @@ import { Raw } from "typeorm";
 import { IngredientService } from "./ingredient.service";
 import { OrderService } from "./order.service";
 
-const storePrepareAt = CONFIG.storePrepareAt.split(':');
-const storePrepareAtHour = storePrepareAt[0];
-const storePrepareAtMinute = storePrepareAt.length >= 2 ? storePrepareAt[1] : '0';
+const [storePrepareHour, storePrepareMinute] = AppConfig.store.prepareAt.split(':');
 
 @Injectable()
 export class StoreService {
@@ -21,18 +20,7 @@ export class StoreService {
         private readonly orderService: OrderService,
     ) { }
 
-    readonly ingDeliveryYoilData = CONFIG.ingredients.deliveredDate.byDayOfWeek;
-    readonly ingDeliveryYoils = [
-        this.ingDeliveryYoilData.sun,
-        this.ingDeliveryYoilData.mon,
-        this.ingDeliveryYoilData.tue,
-        this.ingDeliveryYoilData.wed,
-        this.ingDeliveryYoilData.thu,
-        this.ingDeliveryYoilData.fri,
-        this.ingDeliveryYoilData.sat,
-    ]
-
-    @Cron(`${storePrepareAtMinute} ${storePrepareAtHour} * * 1-5`, {
+    @Cron(`${storePrepareHour} ${storePrepareMinute} * * 1-5`, {
         name: 'before-opening',
         timeZone: 'Asia/Seoul',
     })
@@ -40,11 +28,10 @@ export class StoreService {
         const today = new Date();
         const todayString = moment(today).format('yyyy-MM-DD');
 
-        if (this.ingDeliveryYoils[today.getDay()]) {
+        if (AppConfig.ingredientDeliveryDays[today.getDay()]) {
             // 재료 배달 완료
             this.ingredientService.copyAllOrderToInAmount(today);
         }
-
 
         // 잡혀있는 대기 주문들 예약 주문으로 전환
         const orders = await this.orderService.getOrdersBy({ orderState: OrderState.HOLD, rsvDate: Raw((alias) => `DATE(${alias}) = '${todayString}'`) });

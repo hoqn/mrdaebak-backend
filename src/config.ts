@@ -1,47 +1,34 @@
-import { TypeOrmModuleOptions } from "@nestjs/typeorm";
 import { DataSourceOptions } from "typeorm";
 
-export interface StaffConfig {
-    alarm: StaffAlarmConfig,
+interface StaffConfig {
+    alarmNewOrder: boolean,
 }
 
-export interface StaffAlarmConfig {
-    newOrder?: boolean,
-    underIngredientStock?: {
-        currentStock: number,
-    }
-}
-
-export interface UserConfig {
+interface UserConfig {
     discountForVip: number,
     orderCountForVip: number,
-    alarm: UserAlarmConfig,
 }
 
-export interface UserAlarmConfig {
-    changeOrderState?: boolean,
+enum Weekday { sun, mon, tue, wed, thu, fri, sat }
+
+interface IngredientsConfig {
+    deliveredOn: (keyof typeof Weekday)[],
 }
 
-export interface IngredientsConfig {
-    deliveredDate: {
-        byDayOfWeek?: {
-            sun?: boolean,
-            mon?: boolean,
-            tue?: boolean,
-            wed?: boolean,
-            thu?: boolean,
-            fri?: boolean,
-            sat?: boolean,
-        },
-    },
+type Time = `${number}:${number}`;
+
+interface StoreConfig {
+    openAt: Time,
+    prepareAt: Time,
 }
 
 export interface Config {
     serverPort: number,
     socketPort: number,
     db: DataSourceOptions,
-    storeOpenAt: string,
-    storePrepareAt: string,
+
+    store: StoreConfig,
+
     staff: StaffConfig,
     user: UserConfig,
     ingredients: IngredientsConfig,
@@ -49,7 +36,8 @@ export interface Config {
 
 const defaultConfig: Config = {
     serverPort: 8080,
-    socketPort: 1111,
+    socketPort: 8000,
+
     db: {
         type: 'mariadb',
         host: 'localhost',
@@ -57,40 +45,41 @@ const defaultConfig: Config = {
         username: 'root',
         password: 'password',
         database: 'dbname',
-        synchronize: false,
-        /* TODO: false로 바꿀 것! */
     },
-    storeOpenAt: '15:30',
-    storePrepareAt: '15:00',
+
+    store: {
+        openAt: '15:30',
+        prepareAt: '15:00',
+    },
+
     staff: {
-        alarm: {
-            newOrder: true,
-            underIngredientStock: {
-                currentStock: 10,
-            }
-        }
+        alarmNewOrder: true,
     },
+
     user: {
         discountForVip: 5000,
         orderCountForVip: 5,
-        alarm: {
-            changeOrderState: true,
-        }
     },
+
     ingredients: {
-        deliveredDate: {
-            byDayOfWeek: {
-                mon: true,
-                wed: true,
-                fri: true,
-            }
-        }
+        deliveredOn: ['tue', 'fri'],
     }
 };
 
-import config from '../app.config';
-import config_s from '../app.config.s';
+function makeIngredientDeliveryDayIndexArray(origin: (keyof typeof Weekday)[]) {
+    const result: boolean[] = [false, false, false, false, false, false, false];
+    origin.forEach(weekday => { result[Weekday[weekday]] = true });
+    return result;
+}
 
-const c = process.env.EXPERIMENTAL ? config_s : config;
+import app from '../app.config';
 
-export const CONFIG: Config = { ...defaultConfig, ...c };
+const config: Config = {
+    ...defaultConfig,
+    ...app,
+};
+
+export default {
+    ...config,
+    ingredientDeliveryDays: makeIngredientDeliveryDayIndexArray(config.ingredients.deliveredOn),
+}

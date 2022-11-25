@@ -13,13 +13,13 @@ export class CreateUserDto {
     readonly userName: string;
 
     @IsString() @IsOptional()
-    readonly address: string|null;
-    
-    @IsString() @IsOptional()
-    readonly phoneNumber: string|null;
+    readonly address: string | null;
 
     @IsString() @IsOptional()
-    readonly cardNumber: string|null;
+    readonly phoneNumber: string | null;
+
+    @IsString() @IsOptional()
+    readonly cardNumber: string | null;
 
     toEntity(): User {
         const entity = new User();
@@ -50,12 +50,4 @@ export class PatchUserDto {
 
     @IsString() @IsOptional()
     readonly cardNumber: string;
-}
-
-export class LoginUserDto {
-    @IsString()
-    readonly userId: string;
-    
-    @IsString()
-    readonly password: string;
 }

@@ -1,3 +1,5 @@
+import AppConfig from '@/config';
+
 import { Module } from '@nestjs/common';
 import { TypeOrmModule, TypeOrmModuleOptions } from '@nestjs/typeorm';
 
@@ -5,14 +7,13 @@ import { AuthModule, CartModule, MenuModule, OrderModule, StoreModule, UserModul
 
 import { IngSchedule } from '@/model/entity/ingschedule';
 import { SnakeNamingStrategy } from 'typeorm-naming-strategies';
-import { CONFIG } from './config';
 import { LegacyController } from './controller';
 import { Dinner, DinnerIngredient, DinnerOption, Ingredient, IngredientCategory, Order, OrderDinner, Staff, Style, StyleIngredient, User } from './model/entity';
 import { OrderDinnerOption } from './model/entity/OrderDinnerOption';
 import { IngredientModule } from './module/ingredient.module';
 
 const typeOrmConfig = <TypeOrmModuleOptions>{
-  ...CONFIG.db,
+  ...AppConfig.db,
   entities: [
     //join(__dirname, '{src,dist}/model/entity/**/*.{js,ts}'),
     Dinner, DinnerOption, DinnerIngredient,

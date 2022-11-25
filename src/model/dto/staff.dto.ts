@@ -3,7 +3,7 @@ import { IsEnum, IsIn, IsOptional, IsPhoneNumber, IsString, Max } from "class-va
 import { Staff } from "../entity";
 import { StaffRole } from "../enum";
 
-export class CreateStaffReq {
+export class CreateStaffDto {
     @IsString()
     readonly staffId: string;
 
@@ -24,4 +24,4 @@ export class CreateStaffReq {
     }
 }
 
-export class UpdateStaffReq extends PartialType(CreateStaffReq) { }
+export class UpdateStaffDto extends PartialType(CreateStaffDto) { }

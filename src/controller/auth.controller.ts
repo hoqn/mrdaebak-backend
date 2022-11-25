@@ -1,4 +1,5 @@
 import { NoIdException } from "@/exception";
+import { LoginStaffDto, LoginUserDto } from "@/model/dto/auth.dto";
 import { AuthService } from "@/service/auth.service";
 import { Body, Controller, Delete, NotFoundException, Post, Res, UnauthorizedException, Version } from "@nestjs/common";
 import { Response } from "express";
@@ -11,7 +12,7 @@ export class AuthController {
 
     @Post('users')
     async loginUser(
-        @Body() dto: { userId: string, password: string },
+        @Body() dto: LoginUserDto,
     ) {
         const token = await this.authService.loginUser(dto.userId, dto.password)
             .catch(e => {
@@ -31,7 +32,7 @@ export class AuthController {
 
     @Post('staff')
     async loginStaff(
-        @Body() dto: { staffId: string, password: string },
+        @Body() dto: LoginStaffDto,
     ) {
         const token = await this.authService.loginStaff(dto.staffId, dto.password)
             .catch(e => {

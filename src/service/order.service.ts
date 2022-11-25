@@ -1,4 +1,5 @@
-import { CONFIG } from "@/config";
+import AppConfig from "@/config";
+
 import { StaffAlarmEventGateway } from "@/gateway/staff.gateway";
 import { PageOptionsDto, PageResultDto, PageResultPromise } from "@/model/dto/common.dto";
 import { CreateOrderDinnerDto, UpdateOrderDinnerDto, UpdateOrderMetaDto } from "@/model/dto/order.dto";
@@ -414,7 +415,7 @@ export class OrderService {
                     price += pr;
                 });
 
-        const discount = order.user.grade === UserGrade.VIP ? CONFIG.user.discountForVip : 0;
+        const discount = order.user.grade === UserGrade.VIP ? AppConfig.user.discountForVip : 0;
 
         order.totalPrice = price;
         order.paymentPrice = Math.max(0, price - discount);

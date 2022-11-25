@@ -1,4 +1,5 @@
-import { CONFIG } from "@/config";
+import AppConfig from "@/config";
+
 import { Order } from "@/model/entity";
 import { MessageBody, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
 import { Server, Socket } from "socket.io";
@@ -7,7 +8,7 @@ enum StaffEvents {
     NEW_ORDER = 'NEW_ORDER',
 }
 
-@WebSocketGateway(CONFIG.socketPort, {
+@WebSocketGateway(AppConfig.socketPort, {
     transports: ['websocket', 'polling'],
     namespace: 'staff',
     cors: true,
@@ -19,7 +20,7 @@ export class StaffAlarmEventGateway implements OnGatewayConnection, OnGatewayDis
     server: Server;
 
     constructor() {
-        console.log('Socket io in PORT ', CONFIG.socketPort);
+        console.log('Socket io in PORT ', AppConfig.socketPort);
     }
 
     private clients: Socket[] = [];

@@ -1,11 +1,9 @@
-import { CONFIG } from "@/config";
-import { OutOfLimitException } from "@/exception";
+import AppConfig from "@/config";
 import { PageOptionsDto } from "@/model/dto/common.dto";
-import { CreateIngredientReq, UpdateIngredientReq, UpdateIngredientStockDto, UpdateIngredientStockDtoArray } from "@/model/dto/ingredient.dto";
+import { UpdateIngredientStockDto } from "@/model/dto/ingredient.dto";
 import { IngredientService } from "@/service";
-import { getNextIngredientDeliveryDate } from "@/service/utils/utils";
 import { IngScheduleService } from "@/service/ingschedule.service";
-import { BadRequestException, Body, Controller, Get, NotFoundException, Param, Patch, Post, Put, Query } from "@nestjs/common";
+import { Body, Controller, Get, NotFoundException, Param, Post, Put, Query } from "@nestjs/common";
 import * as moment from "moment";
 
 @Controller('ingredients')
@@ -17,16 +15,7 @@ export class IngredientController {
 
     @Get('orders/delivered-day')
     async getDeliveredDay() {
-        const yoils = CONFIG.ingredients.deliveredDate.byDayOfWeek;
-        return [
-            yoils.sun,
-            yoils.mon,
-            yoils.tue,
-            yoils.wed,
-            yoils.thu,
-            yoils.fri,
-            yoils.sat,
-        ];
+        return AppConfig.ingredientDeliveryDays;
     }
 
     @Get('schedule')
@@ -78,29 +67,29 @@ export class IngredientController {
 
         return dIngredients;
     }
-
-    @Post('items')
-    async postIngredient(
-        @Body() body: CreateIngredientReq,
-    ) {
-        return await this.ingredientService.createIngredient(body);
-    }
-
+    /*
+        @Post('items')
+        async postIngredient(
+            @Body() body: CreateIngredientDto,
+        ) {
+            return await this.ingredientService.createIngredient(body);
+        }
+    */
     @Get('items/:ingredientId')
     async getIngredient(
         @Param('ingredientId') ingredientId: number,
     ) {
         return this.ingredientService.getIngredient(ingredientId);
     }
-
-    @Patch('items/:ingredientId')
-    async patchIngredient(
-        @Param('ingredientId') ingredientId: number,
-        @Body() body: UpdateIngredientReq,
-    ) {
-        return this.ingredientService.updateIngredient(ingredientId, body);
-    }
-
+    /*
+        @Patch('items/:ingredientId')
+        async patchIngredient(
+            @Param('ingredientId') ingredientId: number,
+            @Body() body: UpdateIngredientDto,
+        ) {
+            return this.ingredientService.updateIngredient(ingredientId, body);
+        }
+    */
     @Get('categories')
     async getIngCategories(
         @Query() pageOptions: PageOptionsDto,
@@ -158,8 +147,10 @@ export class IngredientController {
         @Body() pageOptions?: PageOptionsDto,
     ) {
         const d = date ? new Date(date) : new Date();
-        const deliveredDate = getNextIngredientDeliveryDate(d, false);
+        const deliveredDate = this.ingredientService.getNextIngredientDeliveryDate(d, false);
+
         console.log(`incoming date: ${d} / delivered date: ${deliveredDate}`);
+
         return {
             date: moment(deliveredDate).format('yyyy-MM-DD'),
             items: await this.ingredientService.getOrderAmountByDate(deliveredDate)
@@ -194,7 +185,7 @@ export class IngredientController {
             : body as unknown as UpdateIngredientStockDto[];
         const result = [];
 
-        const deliveredDate = getNextIngredientDeliveryDate(new Date(), false);
+        const deliveredDate = this.ingredientService.getNextIngredientDeliveryDate(new Date(), false);
 
         for (let item of items)
             result.push(await

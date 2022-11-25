@@ -1,8 +1,8 @@
 import { PartialType } from "@nestjs/mapped-types";
 import { IsBoolean, IsIn, IsNumber, IsOptional, IsString } from "class-validator";
 import { Ingredient } from "../entity";
-
-export class CreateIngredientReq {
+/*
+export class CreateIngredientDto {
     @IsString()
     readonly ingredientName: string;
 
@@ -13,8 +13,8 @@ export class CreateIngredientReq {
     readonly categoryId: number;
 }
 
-export class UpdateIngredientReq extends PartialType(CreateIngredientReq) { }
-
+export class UpdateIngredientDto extends PartialType(CreateIngredientDto) { }
+*/
 export type UpdateIngredientStockDtoArray = UpdateIngredientStockDto[];
 
 export class UpdateIngredientStockDto {

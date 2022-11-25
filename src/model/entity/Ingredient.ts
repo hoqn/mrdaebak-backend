@@ -1,15 +1,8 @@
-import { CONFIG } from "@/config";
 import {
-  AfterLoad,
   Column,
-  Entity, JoinColumn,
-  ManyToMany,
-  ManyToOne, OneToMany, PrimaryGeneratedColumn
+  Entity, JoinColumn, ManyToOne, PrimaryGeneratedColumn
 } from "typeorm";
-import { Dinner } from "./Dinner";
 import { IngredientCategory } from "./IngredientCategory";
-import { Style } from "./Style";
-import { StyleIngredient } from "./StyleIngredient";
 
 @Entity("ingredient")
 export class Ingredient {

@@ -1,14 +1,14 @@
-import { IdDuplicatedException, OutOfLimitException } from "@/exception";
+import AppConfig from '@/config';
+
 import { PageOptionsDto, PageResultDto, PageResultPromise } from "@/model/dto/common.dto";
-import { CreateIngredientReq, UpdateIngredientReq, UpdateIngredientStockDto } from "@/model/dto/ingredient.dto";
-import { Dinner, DinnerIngredient, DinnerOption, Ingredient, IngredientCategory, Order, OrderDinner, Style, StyleIngredient } from "@/model/entity";
-import { OrderDinnerOption } from "@/model/entity/OrderDinnerOption";
+import { DinnerIngredient, Ingredient, IngredientCategory, OrderDinner, StyleIngredient } from "@/model/entity";
 import { IngSchedule } from "@/model/entity/ingschedule";
+import { OrderDinnerOption } from "@/model/entity/OrderDinnerOption";
 import { IngScheduleService } from "@/service/ingschedule.service";
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import * as moment from "moment";
-import { DataSource, EntityTarget, MoreThan, ObjectType, QueryBuilder, Repository, UpdateQueryBuilder } from "typeorm";
+import { DataSource, MoreThan, Repository, UpdateQueryBuilder } from "typeorm";
 
 type SET_MODE = 'set' | 'add';
 
@@ -82,20 +82,20 @@ export class IngredientService {
     async getIngredient(ingredientId: number) {
         return this.ingredientRepo.findOneBy({ ingredientId });
     }
-
-    async createIngredient(body: CreateIngredientReq) {
-        return await this.ingredientRepo.save(<Ingredient>{
-            ...body,
-        });
-    }
-
-    async updateIngredient(ingredientId: number, body: UpdateIngredientReq) {
-        return this.ingredientRepo.createQueryBuilder()
-            .update().where({ ingredientId })
-            .set(body)
-            .execute();
-    }
-
+    /*
+        async createIngredient(body: CreateIngredientDto) {
+            return await this.ingredientRepo.save(<Ingredient>{
+                ...body,
+            });
+        }
+    
+        async updateIngredient(ingredientId: number, body: UpdateIngredientDto) {
+            return this.ingredientRepo.createQueryBuilder()
+                .update().where({ ingredientId })
+                .set(body)
+                .execute();
+        }
+    */
     // Categories
 
     async getAllIngredientCategories(pageOptions?: PageOptionsDto) {
@@ -316,6 +316,19 @@ export class IngredientService {
             this.setOutAmount(ingredientId, amount, 'add', date),
             this.setRsvAmount(ingredientId, -amount, 'add', date),
         ]);
+    }
+
+    //Utils
+    getNextIngredientDeliveryDate(date: Date, includeThatDay: boolean): Date {
+        const yoil = date.getDay();
+
+        for (let i = includeThatDay ? 0 : 1; i <= 7; i++) {
+            if (AppConfig.ingredientDeliveryDays[(yoil + i) % 7]) {
+                return moment(date).add(i, 'days').toDate();
+            }
+        }
+
+        return null;
     }
 
 }
