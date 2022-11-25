@@ -1,5 +1,5 @@
 import { PageOptionsDto, PageResultDto, PageResultPromise } from "@/model/dto/common.dto";
-import { Dinner, DinnerOption, Style, StyleOption } from "@/model/entity";
+import { Dinner, DinnerOption, Style } from "@/model/entity";
 import { Injectable } from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
@@ -11,7 +11,7 @@ export class MenuService {
         @InjectRepository(Dinner) private readonly dinnerRepo: Repository<Dinner>,
         @InjectRepository(Style) private readonly styleRepo: Repository<Style>,
         @InjectRepository(DinnerOption) private readonly dinnerOptionRepo: Repository<DinnerOption>,
-    ) {}
+    ) { }
 
     async getAllDinners(
         pageOptions: PageOptionsDto
@@ -19,7 +19,7 @@ export class MenuService {
         const qb = this.dinnerRepo.createQueryBuilder()
             .select();
 
-        if(pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection);
+        if (pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection);
         qb.skip(pageOptions.skip).take(pageOptions.take);
 
         const [items, count] = await qb.getManyAndCount();
@@ -28,7 +28,7 @@ export class MenuService {
     }
 
     async getDinnerById(dinnerId: number, widen: boolean = false) {
-        if(widen)
+        if (widen)
             return await this.dinnerRepo.findOne({
                 relations: {
                     dinnerOptions: true
@@ -62,15 +62,15 @@ export class MenuService {
         pageOptions: PageOptionsDto,
     ): PageResultPromise<Style> {
         const qb = this.styleRepo.createQueryBuilder('s');
-        
-        if(query.dinnerId !== undefined) {
+
+        if (query.dinnerId !== undefined) {
             qb
                 .innerJoin('dinner_style', 'ds', 's.style_id=ds.style_id')
                 .innerJoin('dinner', 'd', 'ds.dinner_id=d.dinner_id')
                 .where('ds.dinner_id=:dinnerId', { dinnerId: query.dinnerId });
         }
 
-        if(pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection);
+        if (pageOptions.orderable) qb.orderBy(pageOptions.orderBy, pageOptions.orderDirection);
         qb.skip(pageOptions.skip).take(pageOptions.take);
 
         const [items, count] = await qb.getManyAndCount();
@@ -81,11 +81,12 @@ export class MenuService {
     async getStyleById(styleId: number) {
         return await this.styleRepo.findOneBy({ styleId });
     }
-
-    async getStyleOptions(styleId: number): Promise<StyleOption[]> {
-        return await this.styleRepo.findOne({
-            relations: { styleOptions: true },
-            where: { styleId }
-        }).then(style => style.styleOptions);
-    }
+    /*
+        async getStyleOptions(styleId: number): Promise<StyleOption[]> {
+            return await this.styleRepo.findOne({
+                relations: { styleOptions: true },
+                where: { styleId }
+            }).then(style => style.styleOptions);
+        }
+    */
 }

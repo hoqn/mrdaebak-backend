@@ -1,8 +1,5 @@
-import { Column, Entity, JoinTable, ManyToMany, OneToMany, PrimaryGeneratedColumn } from "typeorm";
+import { Column, Entity, ManyToMany, PrimaryGeneratedColumn } from "typeorm";
 import { Dinner } from "./Dinner";
-import { Ingredient } from "./Ingredient";
-import { StyleIngredient } from "./StyleIngredient";
-import { StyleOption } from "./StyleOption";
 
 @Entity("style")
 export class Style {
@@ -20,12 +17,4 @@ export class Style {
 
   @ManyToMany(() => Dinner, (dinner) => dinner.styles)
   dinners: Dinner[];
-
-  // Relations
-
-  @OneToMany(() => StyleIngredient, o => o.style)
-  styleIngredients: StyleIngredient[];
-
-  @OneToMany(() => StyleOption, o => o.style)
-  styleOptions: StyleOption[];
 }

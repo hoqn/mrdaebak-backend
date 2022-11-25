@@ -16,8 +16,8 @@ export class DinnerIngredient {
     @ManyToOne(() => Dinner)
     @JoinColumn({ name: "dinner_id", referencedColumnName: "dinnerId" })
     dinner: Dinner;
-    
-    @ManyToOne(() => Ingredient, o => o.styleIngredients)
+
+    @ManyToOne(() => Ingredient)
     @JoinColumn({ name: "ingredient_id", referencedColumnName: "ingredientId" })
     ingredient: Ingredient;
 }

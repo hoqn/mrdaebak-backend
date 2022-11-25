@@ -20,10 +20,13 @@ export class Dinner {
   @Column("varchar", { length: 255 })
   dinnerDetail: string;
 
+  @Column("varchar")
+  dinnerImageUrl: string;
+
   // Relations
 
-  @ManyToMany(() => Ingredient, (ingredient) => ingredient.dinners)
-  @JoinTable({ 
+  @ManyToMany(() => Ingredient)
+  @JoinTable({
     name: "dinner_ingredient",
     joinColumns: [{ name: "dinner_id", referencedColumnName: "dinnerId" }],
     inverseJoinColumns: [{ name: "ingredient_id", referencedColumnName: "ingredientId" }],

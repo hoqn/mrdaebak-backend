@@ -84,7 +84,9 @@ export class IngredientService {
     }
 
     async createIngredient(body: CreateIngredientReq) {
-        return await this.ingredientRepo.save(body.toEntity());
+        return await this.ingredientRepo.save(<Ingredient>{
+            ...body,
+        });
     }
 
     async updateIngredient(ingredientId: number, body: UpdateIngredientReq) {
@@ -120,31 +122,6 @@ export class IngredientService {
         return new PageResultDto(pageOptions, count, items);
     }
 
-    // Stocks
-
-    async setIngredientTodayStock(ingredientId: number, amount: number, mode: 'ADD' | 'SET') {
-        const current = await this.ingredientRepo.findOne({
-            select: {
-                prevStock: true,
-                todayArrived: true,
-                todayOut: true,
-            },
-            where: { ingredientId }
-        });
-
-        if (mode === 'ADD') current.todayArrived += amount;
-        else current.todayArrived = amount;
-
-        if (current.todayArrived < 0 || current.currentStock < 0)
-            throw new OutOfLimitException();
-
-        await this.ingredientRepo.update({ ingredientId }, {
-            todayArrived: current.todayArrived,
-        });
-
-        return { ingredientId, ...current };
-    }
-
     // Ingredients Order
 
     async getIngredientOrderStocks(pageOptions: PageOptionsDto) {
@@ -157,34 +134,6 @@ export class IngredientService {
         const [items, count] = await qb.getManyAndCount();
 
         return new PageResultDto(pageOptions, count, items);
-    }
-
-    async setIngredientOrderStock(ingredientId: number, amount: number, mode: 'ADD' | 'SET') {
-        const current = await this.ingredientRepo.findOne({
-            select: {
-                orderedNumber: true,
-            },
-            where: { ingredientId }
-        });
-
-        if (mode === 'ADD') current.orderedNumber += amount;
-        else current.orderedNumber = amount;
-
-        if (current.orderedNumber < 0)
-            throw new OutOfLimitException();
-
-        await this.ingredientRepo.update({ ingredientId }, {
-            orderedNumber: current.orderedNumber,
-        });
-
-        return { ingredientId, ...current };
-    }
-
-    async receiveAllIngredientOrderStock() {
-        this.ingredientRepo.update(
-            { orderedNumber: MoreThan(0) },
-            { todayArrived: () => `today_arrived + orderd_number`, orderedNumber: 0 }
-        )
     }
 
     // Stock Application

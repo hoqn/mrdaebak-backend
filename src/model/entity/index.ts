@@ -10,7 +10,6 @@ export * from "./Order";
 export * from "./OrderDinner";
 
 export * from "./Style";
-export * from "./StyleOption";
 export * from "./StyleIngredient";
 
 export * from "./User";

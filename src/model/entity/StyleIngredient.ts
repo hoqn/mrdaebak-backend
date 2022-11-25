@@ -13,11 +13,11 @@ export class StyleIngredient {
     @Column("int", { name: "amount", default: 1 })
     amount: number;
 
-    @ManyToOne(() => Style, o => o.styleIngredients)
+    @ManyToOne(() => Style)
     @JoinColumn({ name: "style_id", referencedColumnName: "styleId" })
     style: Style;
 
-    @ManyToOne(() => Ingredient, o => o.styleIngredients)
+    @ManyToOne(() => Ingredient)
     @JoinColumn({ name: "ingredient_id", referencedColumnName: "ingredientId" })
     ingredient: Ingredient;
 }
