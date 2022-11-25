@@ -15,14 +15,7 @@ export class StoreService {
         private readonly ingredientService: IngredientService,
         private readonly ingScheduleService: IngScheduleService,
         private readonly orderService: OrderService,
-    ) {
-
-    }
-
-    @Cron('*/05 * * * *')
-    test10Seconds() {
-        console.log('Cron', 'Called!');
-    }
+    ) { }
 
     readonly ingDeliveryYoilData = CONFIG.ingredients.deliveredDate.byDayOfWeek;
     readonly ingDeliveryYoils = [
@@ -34,12 +27,6 @@ export class StoreService {
         this.ingDeliveryYoilData.fri,
         this.ingDeliveryYoilData.sat,
     ]
-
-    // TEST!!
-    @Cron(CronExpression.EVERY_10_SECONDS)
-    async test() {
-        this.prepareOpening();
-    }
 
     @Cron('0 15 * * *', {
         name: 'before-opening',
