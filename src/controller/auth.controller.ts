@@ -49,29 +49,29 @@ export class AuthController {
             'access-token': token,
         };
     }
-
-    @Delete('users')
-    logoutUser(
-        @Res() res: Response,
-    ) {
-        const token = res.header['authorization'];
-        console.log(token);
-        /* TODO */
-
-        res.json({});
-        return;
-    }
-
-    @Version('1')
-    @Delete('staff')
-    logoutStaff(
-        @Res() res: Response,
-    ) {
-        const token = res.header['authorization'];
-        console.log(token);
-        /* TODO */
-
-        res.json({});
-        return;
-    }
+    //
+    //    @Delete('users')
+    //    logoutUser(
+    //        @Res() res: Response,
+    //    ) {
+    //        const token = res.header['authorization'];
+    //        console.log(token);
+    //        /* TODO */
+    //
+    //        res.json({});
+    //        return;
+    //    }
+    //
+    //    @Version('1')
+    //    @Delete('staff')
+    //    logoutStaff(
+    //        @Res() res: Response,
+    //    ) {
+    //        const token = res.header['authorization'];
+    //        console.log(token);
+    //        /* TODO */
+    //
+    //        res.json({});
+    //        return;
+    //    }
 }

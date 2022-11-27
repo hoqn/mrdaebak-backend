@@ -32,10 +32,10 @@ export class CartController {
     @Post(':userId')
     async addToCart(
         @Param('userId') userId: string,
-        @Body() body: CreateOrderDinnerDto,
+        @Body() dto: CreateOrderDinnerDto,
     ) {
         const cart = await this.orderService.getOrCreateCart(userId);
-        return await this.orderService.addOrderDinner(cart.orderId, body);
+        return await this.orderService.addOrderDinner(cart.orderId, dto);
     }
 
     @UseGuards(BaseAuthGuard, ExclusiveOrRoleGuard)
@@ -44,11 +44,11 @@ export class CartController {
     @Patch(':userId')
     async updateCartMeta(
         @Param('userId') userId: string,
-        @Body() body: UpdateOrderMetaDto,
+        @Body() dto: UpdateOrderMetaDto,
     ) {
         const cart = await this.orderService.getOrCreateCart(userId);
 
-        const result = await this.orderService.updateOrder(cart.orderId, body);
+        const result = await this.orderService.updateOrder(cart.orderId, dto);
 
         return result;
     }
@@ -61,23 +61,23 @@ export class CartController {
         const cart = await this.orderService.getOrCreateCart(userId);
         const orderDinner = await this.orderService.getOrderDinner(orderDinnerId, cart.orderId);
 
-        if(!orderDinner) throw new NotFoundException();
+        if (!orderDinner) throw new NotFoundException();
 
         return await this.orderService.deleteOrderDinner(orderDinnerId);
     }
-    
+
     @Patch(':userId/:orderDinnerId')
     async updateCartItem(
         @Param('userId') userId: string,
         @Param('orderDinnerId') orderDinnerId: number,
-        @Body() body: UpdateOrderDinnerDto,
+        @Body() dto: UpdateOrderDinnerDto,
     ) {
         const cart = await this.orderService.getOrCreateCart(userId);
         const orderDinner = await this.orderService.getOrderDinner(orderDinnerId, cart.orderId);
 
-        if(!orderDinner) throw new NotFoundException();
+        if (!orderDinner) throw new NotFoundException();
 
-        return await this.orderService.updateOrderDinner(orderDinner.orderDinnerId, body);
+        return await this.orderService.updateOrderDinner(orderDinner.orderDinnerId, dto);
     }
 
 }

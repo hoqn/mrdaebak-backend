@@ -122,20 +122,6 @@ export class IngredientService {
         return new PageResultDto(pageOptions, count, items);
     }
 
-    // Ingredients Order
-
-    async getIngredientOrderStocks(pageOptions: PageOptionsDto) {
-        const qb = this.ingredientRepo.createQueryBuilder('i')
-            .select().where({ orderedNumber: MoreThan(0) });
-
-        if (pageOptions.orderable) qb.orderBy(pageOptions.order_by, pageOptions.order_direction);
-        qb.skip(pageOptions.skip).take(pageOptions.take);
-
-        const [items, count] = await qb.getManyAndCount();
-
-        return new PageResultDto(pageOptions, count, items);
-    }
-
     // Stock Application
 
     async calculateIngredientStockForOrder(orderId: number, addHook?: (ingredientId: number, addAmount: number) => Promise<void>) {
@@ -194,6 +180,8 @@ export class IngredientService {
         for (let orderOption of orderOptions) {
             await addIng(orderOption.dinnerOption.ingredientId, orderOption.dinnerOption.ingredientAmount * orderOption.amount);
         }
+
+        console.log('Ingredients:', ingredients);
 
         return ingredients;
     }
@@ -319,7 +307,7 @@ export class IngredientService {
     }
 
     //Utils
-    getNextIngredientDeliveryDate(date: Date, includeThatDay: boolean): Date {
+    public static getNextIngredientDeliveryDate(date: Date, includeThatDay: boolean): Date {
         const yoil = date.getDay();
 
         for (let i = includeThatDay ? 0 : 1; i <= 7; i++) {

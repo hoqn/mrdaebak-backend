@@ -22,18 +22,18 @@ export class UserService {
         @InjectRepository(User) private readonly userRepo: Repository<User>
     ) { }
 
-    async createUser(body: CreateUserDto) {
+    async createUser(dto: CreateUserDto) {
         // ID 중복 체크
-        const existing = await this.userRepo.findOneBy({ userId: body.userId });
+        const existing = await this.userRepo.findOneBy({ userId: dto.userId });
         if (existing) throw new IdDuplicatedException();
 
         const user = await this.userRepo.save(<User>{
-            userId: body.userId,
-            password: PasswordEncryptor.encrypt(body.password),
-            userName: body.userName,
-            phoneNumber: body.phoneNumber,
-            address: body.address,
-            cardNumber: body.cardNumber,
+            userId: dto.userId,
+            password: PasswordEncryptor.encrypt(dto.password),
+            userName: dto.userName,
+            phoneNumber: dto.phoneNumber,
+            address: dto.address,
+            cardNumber: dto.cardNumber,
         });
 
         user.password = undefined;
@@ -41,29 +41,31 @@ export class UserService {
         return user;
     }
 
-    async getUsers() {
-        return await this.userRepo.find();
+    async getUsers(pageOptions?: PageOptionsDto) {
+        return await this.getUsersBy({}, pageOptions);
     }
 
     async getUsersBy(
         query: {
             grade?: UserGrade, userName?: string,
-        }, pageOptions: PageOptionsDto,
+        }, pageOptions?: PageOptionsDto,
     ): PageResultPromise<User> {
         const qb = this.userRepo.createQueryBuilder();
 
         if (query.userName !== undefined) qb.andWhere({ userName: ILike(`%${query.userName}%`) });
         if (query.grade !== undefined) qb.andWhere({ grade: query.grade });
 
-        if (pageOptions.orderable) qb.orderBy(pageOptions.order_by, pageOptions.order_direction);
-        qb.skip(pageOptions.skip).take(pageOptions.take);
+        if (pageOptions !== undefined) {
+            if (pageOptions.orderable) qb.orderBy(pageOptions.order_by, pageOptions.order_direction);
+            qb.skip(pageOptions.skip).take(pageOptions.take);
+        }
 
         const [items, count] = await qb.getManyAndCount();
 
         return new PageResultDto(pageOptions, count, items);
     }
 
-    async getUserByUserId(userId: string): Promise<User> {
+    async getUser(userId: string): Promise<User> {
         return await this.userRepo.findOneBy({ userId });
     }
 

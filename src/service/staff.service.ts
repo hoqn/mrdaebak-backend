@@ -72,18 +72,18 @@ export class StaffService {
         throw new BadRequestException(`해당 직원은 승인할 수 없거나 이미 승인된 상태입니다. (${currentRole})`);
     }
 
-    async updateMember(staffId: string, body: UpdateStaffDto): Promise<UpdateResult> {
+    async updateMember(staffId: string, dto: UpdateStaffDto): Promise<UpdateResult> {
         const qb = this.staffRepo.createQueryBuilder()
             .update()
             .where({ staffId });
 
         const updateBody = <Partial<Staff>>{
-            ...body,
-            role: body.staffRole,
+            ...dto,
+            role: dto.staffRole,
         };
 
         if (updateBody.password !== undefined)
-            updateBody.password = PasswordEncryptor.encrypt(body.password);
+            updateBody.password = PasswordEncryptor.encrypt(dto.password);
 
         return await qb.set(updateBody)
             .execute();

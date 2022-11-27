@@ -14,15 +14,15 @@ export class StaffController {
 
     @Post()
     async createMember(
-        @Body() body: CreateStaffDto,
+        @Body() dto: CreateStaffDto,
     ) {
-        const role = body.staffRole;
+        const role = dto.staffRole;
 
         if (role >= StaffRole.COOK) throw new BadRequestException();
 
         console.log('Role', role);
 
-        return await this.staffService.createMember(role, body)
+        return await this.staffService.createMember(role, dto)
             .catch(e => {
                 console.log(e);
                 if (e instanceof IdDuplicatedException)
@@ -63,9 +63,9 @@ export class StaffController {
     @Patch(':staffId')
     async patchMember(
         @Param('staffId') staffId: string,
-        @Body() body: UpdateStaffDto,
+        @Body() dto: UpdateStaffDto,
     ) {
-        const result = await this.staffService.updateMember(staffId, body);
+        const result = await this.staffService.updateMember(staffId, dto);
 
         if (!result) throw new NotFoundException();
 

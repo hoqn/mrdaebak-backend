@@ -18,17 +18,17 @@ export class OrderController {
         @Query('only_count') onlyCount?: boolean,
         @Query() pageOptions?: PageOptionsDto,
     ) {
-        if(onlyCount) {
+        if (onlyCount) {
             return await this.orderService.getOrderCounts();
         }
 
         const mOrderState = orderState ? OrderState[orderState.toUpperCase()] : undefined;
         if (mOrderState === OrderState.CART) throw new ForbiddenException();
 
-        return await this.orderService.getOrdersBy({ 
-                userId,
-                orderState: mOrderState
-            }, pageOptions);
+        return await this.orderService.getOrdersBy({
+            userId,
+            orderState: mOrderState
+        }, pageOptions);
     }
 
     @Get(':orderId')
@@ -37,7 +37,7 @@ export class OrderController {
     ) {
         const order = await this.orderService.getOrder(orderId, true);
 
-        if(!order) throw new NotFoundException();
+        if (!order) throw new NotFoundException();
 
         return order;
     }
@@ -48,8 +48,8 @@ export class OrderController {
     ) {
         return await this.orderService.newOrderFromCart(userId)
             .catch((e: Error) => {
-                if(e.message === '0') throw new NotFoundException();
-                else if(e.message === '1') throw new BadRequestException('주문하려면 더 많은 정보가 필요합니다.');
+                if (e.message === '0') throw new NotFoundException();
+                else if (e.message === '1') throw new BadRequestException('주문하려면 더 많은 정보가 필요합니다.');
                 else throw e;
             });
     }
@@ -61,25 +61,25 @@ export class OrderController {
     ) {
         const orderDinner = await this.orderService.getOrderDinner(orderDinnerId, orderId);
 
-        if(!orderDinner) throw new NotFoundException();
+        if (!orderDinner) throw new NotFoundException();
         return orderDinner;
     }
 
     @Put(':orderId/dinners/:orderDinnerId')
     async updateOrderDinner(
-        //@Param('orderId') orderId: number,
+        @Param('orderId') orderId: number,
         @Param('orderDinnerId') orderDinnerId: number,
-        @Body() body: UpdateOrderDinnerDto,
+        @Body() dto: UpdateOrderDinnerDto,
     ) {
-        const orderDinner = await this.orderService.updateOrderDinner(orderDinnerId, body);
+        const orderDinner = await this.orderService.updateOrderDinner(orderDinnerId, dto);
 
-        if(!orderDinner) throw new NotFoundException();
+        if (!orderDinner) throw new NotFoundException();
         return orderDinner;
     }
 
     @Delete(':orderId/dinners/:orderDinnerId')
     async deleteOrderDinner(
-        //@Param('orderId') orderId: number,
+        @Param('orderId') orderId: number,
         @Param('orderDinnerId') orderDinnerId: number,
     ) {
         return await this.orderService.deleteOrderDinner(orderDinnerId);
@@ -88,9 +88,10 @@ export class OrderController {
     @Put(':orderId/state')
     async updateOrderState(
         @Param('orderId') orderId: number,
-        @Body() body: {orderState: keyof typeof OrderState}
+        @Body('orderState') orderState: keyof typeof OrderState,
+        //@Body() dto: { orderState: keyof typeof OrderState }
     ) {
-        return await this.orderService.setOrderState(orderId, OrderState[body.orderState]);
+        return await this.orderService.setOrderState(orderId, OrderState[orderState]);
     }
 
     @Post(':orderId/copy')
@@ -99,15 +100,15 @@ export class OrderController {
         @Body('userId') userId: string,
     ) {
         const cart = await this.orderService.getOrCreateCart(userId); // 아직 카트가 없으면 만들어야 할 수도 있으므로 반드시 호출
-        
+
         return await this.orderService.copyOrderDinners(orderId, cart.orderId);
     }
 
     @Patch(':orderId')
     async updateOrderMeta(
         @Param('orderId') orderId: number,
-        @Body() body: UpdateOrderMetaDto,
+        @Body() dto: UpdateOrderMetaDto,
     ) {
-        return await this.orderService.updateOrder(orderId, body);
+        return await this.orderService.updateOrder(orderId, dto);
     }
 }

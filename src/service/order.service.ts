@@ -91,16 +91,16 @@ export class OrderService {
         });
     }
 
-    public async updateOrder(orderId: number, body: UpdateOrderMetaDto) {
+    public async updateOrder(orderId: number, dto: UpdateOrderMetaDto) {
 
         const order = await this.orderRepo.findOneBy({ orderId });
 
         console.log('Update Order', orderId);
 
         if (order.orderState !== OrderState.CART) {
-            if (body.rsvDate !== undefined) {
+            if (dto.rsvDate !== undefined) {
                 const rsvDate = order.rsvDate;
-                const newRsvDate = new Date(body.rsvDate);
+                const newRsvDate = new Date(dto.rsvDate);
 
                 const ingredients = await this.ingredientService.calculateIngredientStockForOrder(orderId);
 
@@ -113,7 +113,7 @@ export class OrderService {
 
         return this.orderRepo.update(
             { orderId },
-            { ...body },
+            { ...dto },
         );
     }
 

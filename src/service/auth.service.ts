@@ -19,7 +19,7 @@ export class AuthService {
         console.log('Payload: ', payload);
 
         if (payload.type === ClientType.USER) {
-            return await this.userService.getUserByUserId(payload.id)
+            return await this.userService.getUser(payload.id)
                 .then(u => u ? {
                     type: ClientType.USER,
                     role: SecurityRole.USER,
@@ -60,7 +60,7 @@ export class AuthService {
                 if (member) return member.password
                 else e = new NoIdException();
             })
-            : await this.userService.getUserByUserId(id).then(user => {
+            : await this.userService.getUser(id).then(user => {
                 if (user) return user.password
                 else e = new NoIdException();
             });

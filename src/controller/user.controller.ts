@@ -25,22 +25,22 @@ export class UserController {
         @Query('user_name') userName?: string,
         @Query() pageOptions?: PageOptionsDto,
     ) {
-            const users = await this.userService.getUsersBy({
-                grade: grade ? UserGrade[grade] : undefined, userName
-            }, pageOptions);
+        const users = await this.userService.getUsersBy({
+            grade: grade ? UserGrade[grade] : undefined, userName
+        }, pageOptions);
 
-            if(!users) throw new NotFoundException();
+        if (!users) throw new NotFoundException();
 
-            return users;
+        return users;
     }
 
     @Post()
     async createUser(
-        @Body() body: CreateUserDto,
+        @Body() dto: CreateUserDto,
     ) {
-        return await this.userService.createUser(body)
+        return await this.userService.createUser(dto)
             .catch(e => {
-                if(e instanceof IdDuplicatedException)
+                if (e instanceof IdDuplicatedException)
                     throw new NotAcceptableException(undefined, 'ID가 중복됩니다.')
                 else
                     throw new InternalServerErrorException(e);
@@ -54,9 +54,9 @@ export class UserController {
     async getUser(
         @Param('userId') userId: string,
     ) {
-        const user = await this.userService.getUserByUserId(userId);
+        const user = await this.userService.getUser(userId);
 
-        if(!user) throw new NotFoundException();
+        if (!user) throw new NotFoundException();
 
         return user;
     }

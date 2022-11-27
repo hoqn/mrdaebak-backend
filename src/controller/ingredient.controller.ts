@@ -105,25 +105,25 @@ export class IngredientController {
 
     @Post('stocks')
     async postStocks(
-        @Body() body: UpdateIngredientStockDto | UpdateIngredientStockDto[]
+        @Body() dto: UpdateIngredientStockDto | UpdateIngredientStockDto[]
     ) {
-        return this.setStocks(body, 'add');
+        return this.setStocks(dto, 'add');
     }
 
     @Put('stocks')
     async putStocks(
-        @Body() body: UpdateIngredientStockDto | UpdateIngredientStockDto[]
+        @Body() dto: UpdateIngredientStockDto | UpdateIngredientStockDto[]
     ) {
-        return this.setStocks(body, 'set');
+        return this.setStocks(dto, 'set');
     }
 
     private async setStocks(
-        body: UpdateIngredientStockDto | UpdateIngredientStockDto[],
+        dto: UpdateIngredientStockDto | UpdateIngredientStockDto[],
         mode: 'add' | 'set',
     ) {
-        const items: UpdateIngredientStockDto[] = !Array.isArray(body)
-            ? new Array(body as unknown as UpdateIngredientStockDto)
-            : body as unknown as UpdateIngredientStockDto[];
+        const items: UpdateIngredientStockDto[] = !Array.isArray(dto)
+            ? new Array(dto as unknown as UpdateIngredientStockDto)
+            : dto as unknown as UpdateIngredientStockDto[];
         const result = [];
 
         for (let item of items) {
@@ -144,10 +144,9 @@ export class IngredientController {
     @Get('orders')
     async getOrders(
         @Query('date') date?: string | any,
-        @Body() pageOptions?: PageOptionsDto,
     ) {
         const d = date ? new Date(date) : new Date();
-        const deliveredDate = this.ingredientService.getNextIngredientDeliveryDate(d, false);
+        const deliveredDate = IngredientService.getNextIngredientDeliveryDate(d, false);
 
         console.log(`incoming date: ${d} / delivered date: ${deliveredDate}`);
 
@@ -171,10 +170,10 @@ export class IngredientController {
         return this.setOrders(body, 'set');
     }
 
-    @Get('orders/delivered')
-    async confirmGetOrders() {
-        throw new Error();
-    }
+    //    @Get('orders/delivered')
+    //    async confirmGetOrders() {
+    //        throw new Error();
+    //    }
 
     private async setOrders(
         body: UpdateIngredientStockDto | UpdateIngredientStockDto[],
@@ -185,7 +184,7 @@ export class IngredientController {
             : body as unknown as UpdateIngredientStockDto[];
         const result = [];
 
-        const deliveredDate = this.ingredientService.getNextIngredientDeliveryDate(new Date(), false);
+        const deliveredDate = IngredientService.getNextIngredientDeliveryDate(new Date(), false);
 
         for (let item of items)
             result.push(await
