@@ -1,22 +1,17 @@
 import { Exclude } from "class-transformer";
 import { Column, CreateDateColumn, Entity, OneToMany, PrimaryColumn } from "typeorm";
 import { UserGrade } from "../enum/userGrade.enum";
-import { Client } from "./Client.super";
 import { Order } from "./Order";
 
 @Entity("user")
-export class User  extends Client{
-  override get _id() {
-    return this.userId;
-  }
-
+export class User {
   @PrimaryColumn("varchar", { length: 50 })
   userId: string;
 
   @Column("varchar", { length: 50 })
   userName: string;
 
-  @Column("varchar", {length: 255 })
+  @Column("varchar", { length: 255 })
   password: string;
 
   @Column("varchar", { length: 255 })
@@ -31,7 +26,7 @@ export class User  extends Client{
   @Column("int", { default: 0 })
   orderCount: number;
 
-  @CreateDateColumn({type: "timestamp"})
+  @CreateDateColumn({ type: "timestamp" })
   joinDate: Date;
 
   @Column("int", { default: UserGrade.NORMAL })

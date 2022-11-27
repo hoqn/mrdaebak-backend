@@ -52,4 +52,12 @@ export class Order {
 
   @OneToMany(() => OrderDinner, (orderDinner) => orderDinner.order)
   orderDinners: OrderDinner[];
+
+  // setter
+  public setOrderState(orderState: OrderState | keyof typeof OrderState) {
+    if (typeof orderState === 'number')
+      this.orderState = orderState;
+    else
+      this.orderState = OrderState[orderState];
+  }
 }
