@@ -129,7 +129,8 @@ export class OrderService {
                 select: ['rsvDate'], where: { orderId }
             });
 
-            /*if (state === OrderState.HOLD) {
+            /*
+            if (state === OrderState.HOLD) {
                 await this.ingredientService.calculateIngredientStockForOrder(orderId)
                     .then(async (ingredientMap) => {
                         for (let [key, value] of ingredientMap) {
