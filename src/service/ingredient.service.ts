@@ -134,7 +134,7 @@ export class IngredientService {
 
         for (let orderDinner of orderDinners) {
             await this.calculateIngredientStockForOrderDinner(orderDinner.orderDinnerId, (ingredientId, amount) => {
-                ingredients.set(ingredientId, ingredients.get(ingredientId) ?? 0 + amount);
+                ingredients.set(ingredientId, ingredients.has(ingredientId) ? ingredients.get(ingredientId) + amount : amount);
                 console.log(ingredients);
             });
         }

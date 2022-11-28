@@ -145,6 +145,7 @@ export class OrderService {
                 // 완료됨 -> 재료에 반영
                 await this.ingredientService.calculateIngredientStockForOrder(orderId)
                     .then(async (ingredientMap) => {
+                        console.log("Ingredient", ingredientMap);
                         for (let [key, value] of ingredientMap) {
                             await this.ingredientService.moveRsvToOutAmount(key, value, rsvDate);
                         }
