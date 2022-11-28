@@ -324,7 +324,7 @@ export class OrderService {
 
         const result = await qb.set({
             orderDate: () => 'NOW()',
-            orderState: rsvDate.isBefore(today) ? OrderState.WAITING : OrderState.HOLD,
+            orderState: OrderState.WAITING//rsvDate.isBefore(today) ? OrderState.WAITING : OrderState.HOLD,
         }).execute();
 
         // 예약 재료량 업데이트 (비동기)
