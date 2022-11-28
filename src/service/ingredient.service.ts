@@ -267,7 +267,7 @@ export class IngredientService {
                 this.setStockQuery(ingredientQuery, - amount + stock, 'add');
             } else {
                 this.ingScheduleService.setOutAmount(date, ingredientId, amount, 'add');
-                this.setStockQuery(ingredientQuery, - amount, 'add');
+                this.setStockQuery(ingredientQuery, amount, 'add');
             }
         }
 
