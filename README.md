@@ -1,20 +1,29 @@
-# Cowball Mr.Daebak Backend
+# Mr.Daebak Backend
 
-서울시립대학교 소프트웨어공학 텀 프로젝트 'Cowball Team'
+> 서울시립대학교 소프트웨어공학 텀 프로젝트  
+> Team Cowball
 
-백엔드 작성자: `전호균`
+> ~~Deployed at https://ec2-3-38-162-188.ap-northeast-2.compute.amazonaws.com~~
 
-`node.js` + `Nest.js`
+## 구성원 및 역할
 
-Deploy on https://ec2-3-38-162-188.ap-northeast-2.compute.amazonaws.com
+- 공통: 설계 산출물 작업, 문서 작업, 데이터베이스 설계 등
+- 전호균: **백엔드** 개발 및 인프라, API 설계
+- 송지함: **프런트엔드**(고객용) 개발
+- 권은혜: **프런트엔드**(관리자용) 개발
+
+## 개발 스택
+
+- Web Frontend: JavaScript, React
+- Web Backend: TypeScript, NestJs, TypeORM, MariaDB, PM2
 
 ## 설치
 
 ```bash
-$ yarn
+$ yarn install
 ```
 
-## 실행!
+## 실행
 
 ```bash
 $ yarn start # development
